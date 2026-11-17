@@ -29,8 +29,10 @@ Players are matched to teams by RSN against each team's member list, falling bac
 
 ```
 npm install
-DATABASE_URL=postgres://... ADMIN_PASSWORD=secret npm run dev
+npm run dev
 ```
+
+`npm run dev` reads `DATABASE_URL` and `ADMIN_PASSWORD` from `.env.local` (git-ignored). Copy `.env.example` to start one.
 
 ## Changing the board
 

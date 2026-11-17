@@ -5,114 +5,229 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tower of Ascension Tracker</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700&family=Cinzel:wght@600;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700&family=Big+Shoulders+Display:wght@700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  /* Layout idea: the tower is a literal 30-row column on the left; everything else reads off it. Single dark theme by choice: The Duke clan blue over drifting smoke and lightning. */
+  /* The Duke's electric blue over drifting smoke and lightning. The tower is one continuous shaft; standings are a race up its 30 floors. */
   color-scheme:dark;
-  --bg:#03060f; --surface:rgba(14,22,40,.84); --raised:rgba(30,44,74,.88); --line:#2a3b61;
-  --ink:#e6eefc; --muted:#8fa2c6; --accent:#4aa8ff; --boss:#ef6a6a;
-  --easy:#6fcf7f; --medium:#46d1c0; --hard:#b893f5; --elite:#f59a4f;
-  --display:"Cinzel",Georgia,serif; --body:"Alegreya Sans","Segoe UI",system-ui,sans-serif;
+  --bg:#040814; --panel:rgba(8,15,31,.86); --raised:#111d36; --sunk:rgba(3,7,17,.72);
+  --line:rgba(122,160,232,.17); --line-2:rgba(122,160,232,.32);
+  --ink:#e8eefb; --muted:#97a7c8; --accent:#4aa8ff; --accent-2:#8cc8ff; --on-accent:#031022; --boss:#f27070;
+  --easy:#73d483; --medium:#4fd6c4; --hard:#bb98f7; --elite:#f7a35c;
+  --display:"Big Shoulders Display","Arial Narrow",sans-serif;
+  --body:"Atkinson Hyperlegible Next","Segoe UI",system-ui,sans-serif;
+  --r:10px; --ease:cubic-bezier(.16,1,.3,1);
+  --lift:0 10px 30px -12px rgba(0,4,16,.85),0 2px 6px rgba(0,4,16,.5);
 }
 *{box-sizing:border-box}
 html,body{margin:0}
-body{background:var(--bg);color:var(--ink);font:400 17px/1.45 var(--body)}
-h1,h2,h3{font-family:var(--display);font-weight:600;margin:0;text-wrap:balance;letter-spacing:.02em}
-h1{font-size:22px;font-weight:800;color:var(--accent);text-shadow:0 0 18px rgba(74,168,255,.55);display:flex;flex-direction:column;line-height:1.15}
-h1 small{font:700 12px var(--body);letter-spacing:.32em;text-transform:uppercase;color:var(--muted);text-shadow:none}
-.crest{height:84px;width:auto;border-radius:8px;border:1px solid var(--line);box-shadow:0 0 24px rgba(40,110,255,.45)}
-#sky{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
-.wrap{position:relative;z-index:1}
-h2{font-size:18px} h3{font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-family:var(--body);font-weight:700}
+html{scrollbar-color:#2a3e66 var(--bg);accent-color:var(--accent)}
+body{background:var(--bg);color:var(--ink);font:400 16px/1.5 var(--body);caret-color:var(--accent);-webkit-font-smoothing:antialiased}
+::selection{background:rgba(74,168,255,.38);color:#fff}
+h1,h2,h3,h4{margin:0;text-wrap:balance}
+h1,h2{font-family:var(--display);font-weight:800;letter-spacing:.005em;line-height:1}
+h1{font-size:clamp(34px,4.4vw,46px)}
+h2{font-size:28px}
+h3{font-family:var(--display);font-weight:700;font-size:21px;line-height:1.1;letter-spacing:.01em}
 p{margin:0}
+a{color:var(--accent-2);text-underline-offset:3px}
 button,input,select{font:inherit;color:inherit}
 button{cursor:pointer}
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+:focus-visible{outline:2px solid var(--accent-2);outline-offset:2px}
 .num{font-variant-numeric:tabular-nums}
 .muted{color:var(--muted)}
-.wrap{max-width:1180px;margin:0 auto;padding:16px}
-header.top{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;border-bottom:1px solid var(--line);padding-bottom:12px}
-nav{display:flex;gap:4px;flex-wrap:wrap}
-nav a{padding:6px 14px;border-radius:6px;color:var(--muted);text-decoration:none;font-weight:700}
-nav a[aria-current="page"]{background:var(--raised);color:var(--ink)}
-.mode{margin-left:auto;font-size:14px;padding:4px 10px;border-radius:99px;border:1px solid var(--line);color:var(--muted)}
-.mode.live{color:var(--easy);border-color:var(--easy)}
-.banner{background:var(--raised);border-left:3px solid var(--accent);padding:10px 14px;border-radius:4px;margin-top:12px;font-size:16px}
-.banner.err{border-color:var(--boss)}
-main{display:flex;flex-direction:column;gap:20px;margin-top:16px}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px}
-.btn{background:var(--raised);border:1px solid var(--line);border-radius:6px;padding:6px 12px;font-weight:700}
-.btn:hover{border-color:var(--accent)}
-.btn.primary{background:var(--accent);color:#04101f;border-color:var(--accent)}
+#sky{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.wrap{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:20px 16px 64px}
+
+/* header */
+header.top{display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"crest title mode" "nav nav nav";gap:18px 20px;align-items:center}
+.crest{grid-area:crest;height:76px;width:auto;border-radius:8px;display:block;box-shadow:var(--lift)}
+.title{grid-area:title;display:flex;flex-direction:column;gap:6px}
+.title p{color:var(--muted);font-size:15px}
+.mode{grid-area:mode;font-size:14px;color:var(--muted);display:flex;align-items:center;gap:8px;white-space:nowrap}
+.mode::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.mode.live::before{background:var(--easy);box-shadow:0 0 0 3px rgba(115,212,131,.18)}
+nav{grid-area:nav;display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+nav a{position:relative;padding:10px 14px 12px;color:var(--muted);text-decoration:none;font-weight:600;white-space:nowrap;transition:color .2s}
+nav a:hover{color:var(--ink)}
+nav a[aria-current="page"]{color:var(--ink)}
+.banner{background:var(--raised);border:1px solid var(--line-2);padding:10px 14px;border-radius:8px;margin-top:14px;font-size:15px}
+.banner.err{border-color:rgba(242,112,112,.6);background:rgba(242,112,112,.1)}
+main{display:flex;flex-direction:column;gap:22px;margin-top:22px}
+
+/* surfaces + controls */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:20px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--lift)}
+.card>h3:not(:first-child){margin-top:10px}
+.card .card{box-shadow:none;background:var(--raised);border-color:var(--line-2)}
+.btn{background:var(--raised);border:1px solid var(--line-2);border-radius:7px;padding:7px 14px;font-weight:600}
+.btn:hover{border-color:var(--accent);background:#152443}
+.btn.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.btn.primary:hover{background:var(--accent-2);border-color:var(--accent-2)}
 .btn.danger{color:var(--boss)}
-.btn.small{padding:2px 8px;font-size:14px}
+.btn.danger:hover{border-color:var(--boss)}
+.btn.small{padding:3px 10px;font-size:14px}
 .btn:disabled{opacity:.5;cursor:default}
-input,select{background:rgba(7,11,22,.8);border:1px solid var(--line);border-radius:6px;padding:6px 10px;min-width:0}
-label{font-size:14px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+input,select{background:var(--sunk);border:1px solid var(--line-2);border-radius:7px;padding:7px 10px;min-width:0;transition:border-color .15s}
+input:hover,select:hover{border-color:#3d5a8f}
+input:focus,select:focus{border-color:var(--accent);outline:none}
+input::placeholder{color:#7d8db0}
+select:disabled{opacity:.55}
+label{font-size:14px;color:var(--muted);display:flex;flex-direction:column;gap:5px}
 .row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
 .grow{flex:1 1 160px}
 
-/* standings */
-.standings{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
-.stand{background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--c);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;text-align:left}
-.stand .name{font-weight:700;font-size:18px;display:flex;justify-content:space-between;gap:8px}
-.stand .big{font-family:var(--display);font-size:26px;line-height:1.1}
-.bar{height:8px;background:var(--bg);border-radius:99px;overflow:hidden}
-.bar i{display:block;height:100%;background:var(--c,var(--accent));border-radius:99px}
-.bar.hp i{background:var(--boss)}
+/* standings: a race up 30 floors */
+.race{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--lift);overflow:hidden}
+.stand{all:unset;box-sizing:border-box;width:100%;cursor:pointer;display:grid;grid-template-columns:52px minmax(150px,1fr) minmax(220px,2.1fr) 104px;gap:6px 20px;align-items:center;padding:14px 20px;transition:background .2s}
+.stand+.stand{border-top:1px solid var(--line)}
+.stand:hover{background:rgba(74,168,255,.06)}
+.stand:focus-visible{outline:2px solid var(--accent-2);outline-offset:-2px}
+.rank{font:800 40px/1 var(--display);color:#3c5280}
+.stand:first-child .rank{color:var(--accent)}
+.who{display:flex;flex-direction:column;gap:2px;min-width:0}
+.who .name{font-weight:700;font-size:17px;display:flex;align-items:center;gap:8px}
+.who .name::before{content:"";width:10px;height:10px;border-radius:3px;background:var(--c);flex:none}
+.who .meta{font-size:14px}
+.at{font:800 30px/1 var(--display);text-align:right;white-space:nowrap}
+.at small{display:block;font:600 12px var(--body);color:var(--muted);margin-top:4px}
+.track{display:grid;grid-template-columns:repeat(30,1fr);gap:3px;align-items:end;height:24px}
+.track i{height:12px;border-radius:2px;background:linear-gradient(90deg,var(--c,var(--accent)) calc(var(--f)*100%),rgba(140,170,230,.13) 0)}
+.track i.b{height:24px;background:linear-gradient(90deg,var(--c,var(--accent)) calc(var(--f)*100%),rgba(242,112,112,.28) 0)}
 
 /* tower */
-.towergrid{display:grid;grid-template-columns:minmax(280px,360px) 1fr;gap:20px;align-items:start}
-.tower{display:flex;flex-direction:column;gap:3px}
-.fl{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:5px 10px;text-align:left;min-height:36px}
-.fl:hover{border-color:var(--accent)}
-.fl[aria-pressed="true"]{border-color:var(--accent);background:var(--raised)}
-.fl.boss{border-left:3px solid var(--boss);min-height:48px}
-.fl.cur{border-color:var(--accent);box-shadow:0 0 16px rgba(74,168,255,.55),inset 0 0 0 1px var(--accent)}
-.here{font-size:15px;color:var(--muted)}
-.here.on{color:var(--accent);font-weight:700}
-.fl .n{font-family:var(--display);font-size:16px;color:var(--muted)}
+.towergrid{display:grid;grid-template-columns:minmax(290px,370px) 1fr;gap:22px;align-items:start}
+.tower{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--lift)}
+.fl{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:38px 1fr auto;gap:12px;align-items:center;padding:6px 14px;min-height:38px;transition:background .15s}
+.fl+.fl{border-top:1px solid var(--line)}
+.fl:hover{background:rgba(74,168,255,.07)}
+.fl:focus-visible{outline:2px solid var(--accent-2);outline-offset:-2px}
+.fl.boss{min-height:54px;background:linear-gradient(90deg,rgba(242,112,112,.13),rgba(242,112,112,.02) 70%)}
+.fl.boss:hover{background:linear-gradient(90deg,rgba(242,112,112,.2),rgba(242,112,112,.05) 70%)}
+.fl.cur{background:rgba(74,168,255,.16)}
+.fl[aria-pressed="true"]{box-shadow:inset 0 0 0 1px var(--accent);border-radius:4px}
+.fl .n{font:800 22px/1 var(--display);color:#5d7099;text-align:right}
+.fl.cur .n{color:var(--accent-2)}
 .fl.boss .n{color:var(--boss)}
 .fl .lbl{display:flex;flex-direction:column;line-height:1.2;min-width:0}
+.fl .lbl>span{font:700 19px/1.05 var(--display);letter-spacing:.01em}
 .fl .lbl small{color:var(--muted);font-size:13px}
-.dots{display:flex;gap:3px;flex-wrap:wrap;justify-content:flex-end}
-.dot{width:22px;height:22px;border-radius:50%;background:var(--c);color:#111;font-size:12px;font-weight:700;display:grid;place-items:center}
-.detail{position:sticky;top:12px}
-.tier{display:flex;flex-direction:column;gap:6px}
-.tier h4{margin:0;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--t)}
+.dots{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.dot{width:22px;height:22px;border-radius:50%;background:var(--c);color:#06101f;font-size:12px;font-weight:700;display:grid;place-items:center;box-shadow:0 0 0 2px var(--bg)}
+.detail{position:sticky;top:16px}
+.here{font-size:15px;color:var(--muted)}
+.here.on{color:var(--accent-2);font-weight:700}
+.tier{display:flex;flex-direction:column;gap:8px}
+.tier h4{font:700 21px/1 var(--display);letter-spacing:.02em;text-transform:capitalize;color:var(--t);display:flex;gap:8px;align-items:baseline}
+.tier h4 span{font:600 13px var(--body);color:var(--muted)}
 .tiles{display:flex;flex-wrap:wrap;gap:6px}
-.tile{border:1px solid var(--line);border-left:3px solid var(--t);background:var(--raised);border-radius:5px;padding:5px 10px;font-size:15px;text-align:left;max-width:100%}
-button.tile:hover{border-color:var(--accent);border-left-color:var(--t)}
-.tile.done{opacity:.5;text-decoration:line-through}
-.tile.sel{outline:2px solid var(--accent)}
-.tile b{color:var(--t);margin-left:6px;text-decoration:none;display:inline-block}
+.tile{border:1px solid color-mix(in srgb,var(--t) 38%,transparent);background:color-mix(in srgb,var(--t) 8%,var(--sunk));border-radius:6px;padding:5px 10px;font-size:14.5px;text-align:left;max-width:100%;color:var(--ink);display:inline-flex;align-items:center;gap:6px}
+button.tile{transition:background .15s,border-color .15s}
+button.tile:hover{border-color:var(--t);background:color-mix(in srgb,var(--t) 18%,var(--sunk))}
+.tile.done{color:var(--muted);border-style:dashed;background:transparent;text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--t) 70%,transparent)}
+.tile.done svg{flex:none;color:var(--t)}
+.tile.sel{background:var(--t);border-color:var(--t);color:#06101f}
+.tile b{color:var(--t);text-decoration:none}
 .t-easy{--t:var(--easy)} .t-medium{--t:var(--medium)} .t-hard{--t:var(--hard)} .t-elite{--t:var(--elite)}
-.mech{border-left:3px solid var(--boss);padding:6px 12px;background:var(--raised);border-radius:4px;font-size:16px}
+.mech{border:1px solid rgba(242,112,112,.35);background:rgba(242,112,112,.08);padding:10px 14px;border-radius:8px;font-size:15px}
+.mech strong{color:var(--boss);margin-right:6px}
 .opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}
-.opt{border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-size:15px}
-.opt.on{border-color:var(--accent)}
-.opt strong{display:block;color:var(--accent)}
+.opt{border:1px solid var(--line-2);border-radius:8px;padding:10px 12px;font-size:14.5px;background:var(--sunk)}
+.opt.on{border-color:var(--accent);background:rgba(74,168,255,.1)}
+.opt strong{display:block;font:700 18px/1.15 var(--display);color:var(--accent-2);margin-bottom:3px}
 
 .pills{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-.pill{border:1px solid var(--line);border-radius:99px;padding:4px 14px;background:var(--surface);font-weight:700;display:flex;gap:6px;align-items:center}
-.pill[aria-pressed="true"]{background:var(--raised);border-color:var(--c)}
-.pill::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--c)}
-.chip{display:inline-flex;gap:6px;align-items:center;background:var(--raised);border-radius:99px;padding:2px 10px;font-size:15px}
-.chip button{border:0;background:none;color:var(--muted);padding:0 2px}
-.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;align-items:start}
+.pill{border:1px solid var(--line-2);border-radius:99px;padding:5px 14px;background:var(--panel);font-weight:600;display:flex;gap:8px;align-items:center;transition:border-color .15s,background .15s}
+.pill:hover{border-color:var(--c)}
+.pill[aria-pressed="true"]{background:color-mix(in srgb,var(--c) 20%,var(--panel));border-color:var(--c)}
+.pill::before{content:"";width:9px;height:9px;border-radius:3px;background:var(--c)}
+.teamhead{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.teamhead h2{display:flex;align-items:center;gap:12px}
+.teamhead h2::before{content:"";width:14px;height:14px;border-radius:4px;background:var(--c)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:22px;align-items:start}
 .tablewrap{overflow-x:auto}
 table{border-collapse:collapse;width:100%;font-size:15px}
-th,td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--line);vertical-align:top}
-th{color:var(--muted);font-size:13px;text-transform:uppercase;letter-spacing:.06em}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+tbody tr:hover td{background:rgba(74,168,255,.04)}
+th{color:var(--muted);font-size:13px;font-weight:600}
 td.r,th.r{text-align:right}
-.prose{max-width:65ch;display:flex;flex-direction:column;gap:10px}
-.prose ol,.prose ul{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.swatch{display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--t);margin-right:6px;vertical-align:1px}
+.prose{max-width:68ch;display:flex;flex-direction:column;gap:12px}
+.prose ol,.prose ul{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px}
+.prose li::marker{color:var(--accent);font-weight:700}
 .tierkey{display:flex;gap:8px;flex-wrap:wrap}
-.tierkey span{border-left:3px solid var(--t);background:var(--raised);padding:4px 10px;border-radius:4px;font-size:15px}
-textarea{width:100%;min-height:120px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:6px;font:14px/1.4 ui-monospace,monospace;padding:8px}
-@media (max-width:760px){.towergrid{grid-template-columns:1fr}.detail{position:static;order:-1}.mode{margin-left:0}}
-@media (prefers-reduced-motion:no-preference){.bar i{transition:width .3s}}
+.tierkey span{border:1px solid color-mix(in srgb,var(--t) 38%,transparent);background:color-mix(in srgb,var(--t) 8%,transparent);padding:5px 12px;border-radius:6px;font-size:14.5px}
+.filters label{flex:0 1 auto;min-width:130px}
+.proof{display:inline-flex;align-items:center;gap:4px;color:var(--accent-2);font-weight:600;white-space:nowrap}
+.linkbtn{background:none;border:0;padding:0;color:var(--muted);font-size:13.5px;text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
+.linkbtn:hover{color:var(--ink)}
+.toast{position:fixed;left:50%;bottom:20px;z-index:10;width:min(560px,calc(100vw - 32px));display:flex;align-items:center;gap:14px;padding:12px 12px 12px 16px;
+  background:#13213f;border:1px solid var(--line-2);border-radius:12px;box-shadow:0 18px 40px -12px rgba(0,3,12,.9),0 4px 10px rgba(0,3,12,.5);
+  overflow:hidden;transform:translate(-50%,calc(100% + 30px));opacity:0;visibility:hidden;transition:transform .24s ease-in,opacity .2s ease-in,visibility 0s .24s}
+.toast.show{transform:translate(-50%,0);opacity:1;visibility:visible;transition:transform .5s var(--ease),opacity .3s}
+.toast.big.show{animation:toastbig .6s var(--ease)}
+@keyframes toastbig{from{scale:.94}}
+.toast.big{border-color:var(--accent);background:linear-gradient(180deg,#183063,#13213f)}
+.toast-body{flex:1;display:flex;flex-direction:column;gap:2px;font-size:15px;min-width:0}
+.toast-big{font:800 24px/1.05 var(--display);color:#fff}
+.toast-acts{display:flex;gap:6px;align-items:center;flex:none}
+.toast-x{background:none;border:0;color:var(--muted);padding:6px;border-radius:6px;display:grid;place-items:center}
+.toast-x:hover{color:var(--ink);background:rgba(255,255,255,.06)}
+@media (prefers-reduced-motion:reduce){.toast{transform:translate(-50%,0)}.toast,.toast.show{transition:opacity .2s,visibility 0s .2s}.toast.show{transition:opacity .2s}.toast.big.show{animation:none}}
+textarea{width:100%;min-height:120px;background:var(--sunk);color:var(--ink);border:1px solid var(--line-2);border-radius:8px;font:14px/1.45 ui-monospace,monospace;padding:10px}
+@media (max-width:760px){
+  header.top{grid-template-columns:auto 1fr;grid-template-areas:"crest mode" "title title" "nav nav";gap:14px}
+  .crest{height:60px} .mode{justify-self:end}
+  .towergrid{grid-template-columns:1fr}.detail{position:static;order:-1}
+  .stand{grid-template-columns:34px 1fr auto;padding:12px 14px;gap:8px 12px}
+  .rank{font-size:30px}
+  .stand .track{grid-column:1/-1;grid-row:2}
+  .card{padding:16px}
+  nav a{padding:10px 7px 12px;font-size:14.5px}
+  .filters{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .filters label{min-width:0}
+  .filters select{width:100%}
+  .toast{flex-direction:column;align-items:stretch;gap:10px;bottom:12px}
+  .toast-acts{justify-content:flex-end}
+  .toast-big{font-size:22px}
+}
+/* ---------- motion ----------
+   Thesis: the climb. Bars fill floor by floor, tokens rise up the shaft, and a boss kill strikes lightning across the sky.
+   Everything else is quiet feedback: transitions explain what changed, never decorate. */
+@property --f{syntax:'<number>';inherits:true;initial-value:0}
+.dot{position:relative;z-index:2}
+.stand{position:relative}
+.btn,.pill,button.tile,.fl{transition-property:border-color,background,color,transform;transition-duration:.15s}
+.btn:active,.pill:active,button.tile:active{transform:scale(.965);transition-duration:.06s}
+.fl:active{transform:scale(.99)}
+nav .ink{position:absolute;left:10px;right:10px;bottom:-1px;height:2px;border-radius:2px;background:var(--accent);view-transition-name:tab-ink}
+tr.fresh td{animation:fresh 2.6s ease-out}
+@keyframes fresh{0%,25%{background:rgba(74,168,255,.17)}100%{background:transparent}}
+.tile.done.fresh{animation:tilefresh 1.4s ease-out}
+@keyframes tilefresh{0%,20%{background:color-mix(in srgb,var(--t) 28%,transparent);color:var(--ink)}}
+@media (prefers-reduced-motion:no-preference){
+  .card.entering{animation:enter .34s var(--ease) both}
+  @keyframes enter{from{opacity:0;transform:translateY(-6px);clip-path:inset(0 0 100% 0 round 10px)}to{clip-path:inset(0 0 0 0 round 10px)}}
+  .tile.sel.entering{animation:selpop .28s var(--ease)}
+  @keyframes selpop{from{transform:scale(.92)}}
+  .tile.done.fresh svg path{stroke-dasharray:16;stroke-dashoffset:16;animation:draw .5s .2s var(--ease) forwards}
+  @keyframes draw{to{stroke-dashoffset:0}}
+  .stand.promoted::after,.toast.big::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;transform:translateX(-101%);animation:sweep 1.3s var(--ease) forwards}
+  .stand.promoted::after{background:linear-gradient(100deg,transparent 20%,color-mix(in srgb,var(--c) 26%,transparent) 50%,transparent 80%)}
+  .toast.big::after{background:linear-gradient(100deg,transparent 30%,rgba(150,205,255,.22) 50%,transparent 70%);animation-delay:.2s}
+  @keyframes sweep{to{transform:translateX(101%)}}
+  /* View transitions: tabs crossfade and rise, the tab underline glides, the floor panel morphs. */
+  [data-vt=view] #app{view-transition-name:main}
+  [data-vt=floor] .detail{view-transition-name:detail}
+  ::view-transition-group(*){animation-duration:.42s;animation-timing-function:var(--ease)}
+  ::view-transition-group(root){animation-duration:.2s}
+  ::view-transition-old(main),::view-transition-old(detail){animation:vt-out .15s ease-in both}
+  ::view-transition-new(main){animation:vt-in .42s var(--ease) both}
+  ::view-transition-new(detail){animation:vt-in .32s var(--ease) both}
+  @keyframes vt-out{to{opacity:0;transform:translateY(-4px)}}
+  @keyframes vt-in{from{opacity:0;transform:translateY(10px);filter:blur(4px)}}
+}
 </style>
 </head>
 <body>
@@ -120,11 +235,12 @@ textarea{width:100%;min-height:120px;background:var(--bg);color:var(--ink);borde
 <div class="wrap">
   <header class="top">
     <img class="crest" src="/banner.png" alt="Welcome to The Duke, home of uncommon sense" width="389" height="218">
-    <h1><small>The Duke · Home of uncommon sense</small>Tower of Ascension</h1>
+    <div class="title"><h1>Tower of Ascension</h1><p>The Duke clan event · 30 floors, six bosses, first to the top wins</p></div>
     <nav id="nav" aria-label="Sections"></nav>
     <span id="mode" class="mode">Connecting</span>
   </header>
   <div id="banners"></div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <main id="app"></main>
 </div>
 <script>
@@ -137,10 +253,104 @@ const SEAL = {elite: [20, 18, 16, 14, 12], hard: [15, 14, 12, 11, 9], medium: [1
 const RAIDS = ['CoX', 'ToB', 'ToA', 'TFA'];
 const COLORS = ['#ef6a6a', '#4aa8ff', '#6fbf73', '#d9b45a', '#b889f0', '#f08a4b', '#4fc4b8', '#e07aa8'];
 const VIEWS = [['tower', 'Tower'], ['teams', 'Teams'], ['log', 'Drop log'], ['rules', 'How it works'], ['admin', 'Admin']];
+const CHECK = '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5"/></svg>';
+// Suggested drops for the "Drop or note" field, keyed by the start of a tile name. Suggestions only: admins can still type anything.
+const DROPS = {
+  'Any CoX purple': ['Twisted bow', 'Elder maul', 'Kodai insignia', 'Dragon claws', 'Ancestral hat', 'Ancestral robe top', 'Ancestral robe bottom', 'Dinh\'s bulwark', 'Dragon hunter crossbow', 'Twisted buckler', 'Arcane prayer scroll', 'Dexterous prayer scroll', 'Olmlet'],
+  'Any ToB purple': ['Scythe of vitur', 'Ghrazi rapier', 'Sanguinesti staff', 'Justiciar faceguard', 'Justiciar chestguard', 'Justiciar legguards', 'Avernic defender hilt', 'Lil\' Zik'],
+  'Any ToA purple': ['Tumeken\'s shadow', 'Masori mask', 'Masori body', 'Masori chaps', 'Elidinis\' ward', 'Lightbearer', 'Osmumten\'s fang', 'Tumeken\'s guardian'],
+  'Any ToB ornament kit': ['Holy ornament kit', 'Sanguine ornament kit', 'Sanguine dust'],
+  'Twisted ancestral colour kit': ['Twisted ancestral colour kit', 'Metamorphic dust'],
+  'Any Barrows unique': ['Ahrim\'s hood', 'Ahrim\'s robetop', 'Ahrim\'s robeskirt', 'Ahrim\'s staff', 'Dharok\'s helm', 'Dharok\'s platebody', 'Dharok\'s platelegs', 'Dharok\'s greataxe', 'Guthan\'s helm', 'Guthan\'s platebody', 'Guthan\'s chainskirt', 'Guthan\'s warspear', 'Karil\'s coif', 'Karil\'s leathertop', 'Karil\'s leatherskirt', 'Karil\'s crossbow', 'Torag\'s helm', 'Torag\'s platebody', 'Torag\'s platelegs', 'Torag\'s hammers', 'Verac\'s helm', 'Verac\'s brassard', 'Verac\'s plateskirt', 'Verac\'s flail'],
+  'Any GWD boss unique': ['Bandos chestplate', 'Bandos tassets', 'Bandos boots', 'Bandos hilt', 'Armadyl helmet', 'Armadyl chestplate', 'Armadyl chainskirt', 'Armadyl hilt', 'Saradomin sword', 'Saradomin\'s light', 'Armadyl crossbow', 'Saradomin hilt', 'Staff of the dead', 'Zamorakian spear', 'Steam battlestaff', 'Zamorak hilt', 'Nexling', 'Zaryte vambraces', 'Torva full helm (damaged)', 'Torva platebody (damaged)', 'Torva platelegs (damaged)', 'Nihil horn', 'Ancient hilt', 'General Graardor jr.', 'Kree\'arra jr.', 'Commander Zilyana jr.', 'K\'ril Tsutsaroth jr.'],
+  'Any DT2 boss unique': ['Ultor vestige', 'Bellator vestige', 'Magus vestige', 'Venator vestige', 'Chromium ingot', 'Virtus mask', 'Virtus robe top', 'Virtus robe bottom', 'Eye of the duke', 'Siren\'s staff', 'Baron', 'Butch', 'Lil\'viathan', 'Wisp'],
+  'Any Colosseum unique': ['Sunfire fanatic helm', 'Sunfire fanatic cuirass', 'Sunfire fanatic chausses', 'Echo crystal', 'Tonalztics of ralos', 'Smol heredit'],
+  'Quiver': ['Dizana\'s quiver'],
+  'Inferno cape': ['Infernal cape'],
+  'Fire Cape': ['Fire cape'],
+  'Vorkath tertiary': ['Draconic visage', 'Skeletal visage', 'Vorki', 'Jar of decay', 'Dragonbone necklace'],
+  'Zulrah unique': ['Tanzanite fang', 'Magic fang', 'Serpentine visage', 'Uncut onyx', 'Tanzanite mutagen', 'Magma mutagen', 'Pet snakeling', 'Jar of swamp'],
+  'Zenyte shard': ['Zenyte shard'],
+  'Any Tormented Demon unique': ['Tormented synapse', 'Burning claw'],
+  'Venator shard': ['Venator shard'],
+  'Zalcano tertiary': ['Crystal tool seed', 'Zalcano shard', 'Smolcano', 'Uncut onyx'],
+  'Unsired': ['Abyssal dagger', 'Abyssal bludgeon (piece)', 'Abyssal head', 'Abyssal orphan', 'Jar of miasma', 'Granite gloves', 'Granite ring', 'Granite hammer', 'Black tourmaline core', 'Noon', 'Jar of stone'],
+  'Any Gauntlet unique': ['Enhanced crystal weapon seed', 'Crystal armour seed', 'Youngllef'],
+  'Any Wildy boss rings': ['Tyrannical ring', 'Ring of the gods', 'Treasonous ring'],
+  'Any DKS ring': ['Berserker ring', 'Archers ring', 'Seers ring', 'Warrior ring'],
+  'Any Kraken unique': ['Trident of the seas (full)', 'Kraken tentacle', 'Pet kraken', 'Jar of dirt', 'Smoke battlestaff', 'Dragon chainbody', 'Occult necklace', 'Pet smoke devil'],
+  'Any Araxxor unique': ['Noxious point', 'Noxious blade', 'Noxious pommel', 'Araxyte fang', 'Araxyte head', 'Nid', 'Jar of venom', 'Hydra\'s claw', 'Hydra leather', 'Hydra tail', 'Hydra\'s eye', 'Hydra\'s fang', 'Hydra\'s heart', 'Dragon hunter lance', 'Ikkle hydra', 'Jar of chemicals'],
+  'Any Elemental staff crown': ['Fire elemental staff crown', 'Water elemental staff crown', 'Earth elemental staff crown', 'Air elemental staff crown'],
+  'Any Cerberus unique': ['Primordial crystal', 'Pegasian crystal', 'Eternal crystal', 'Smouldering stone', 'Hellpuppy', 'Jar of souls'],
+  'Any Nightmare unique': ['Inquisitor\'s great helm', 'Inquisitor\'s hauberk', 'Inquisitor\'s plateskirt', 'Inquisitor\'s mace', 'Nightmare staff', 'Eldritch orb', 'Harmonised orb', 'Volatile orb', 'Little nightmare', 'Jar of dreams', 'Parasitic egg'],
+  'Any Corp sigil': ['Spectral sigil', 'Arcane sigil', 'Elysian sigil'],
+  'Any Voidwaker piece': ['Voidwaker hilt', 'Voidwaker blade', 'Voidwaker gem'],
+  'KQ unique': ['Kalphite queen head', 'Dragon chainbody', 'Dragon pickaxe', 'Dragon 2h sword', 'Kalphite princess', 'Jar of sand'],
+  'Dragon pickaxe': ['Dragon pickaxe'],
+  'Black mask': ['Black mask'],
+  'Blood shard': ['Blood shard'],
+  'Sarachnis cudgel': ['Sarachnis cudgel'],
+  'Pharaoh\'s sceptre': ['Pharaoh\'s sceptre'],
+  'KBD Heads': ['KBD heads'],
+  'Broken dragon hook': ['Broken dragon hook', 'Dragon cannon barrel'],
+  'Unique or Statuette from Revs': ['Craw\'s bow (u)', 'Thammaron\'s sceptre (u)', 'Viggora\'s chainmace (u)', 'Amulet of avarice', 'Ancient emblem', 'Ancient totem', 'Ancient statuette', 'Ancient medallion', 'Ancient effigy', 'Ancient relic'],
+  'Any Tempoross unique': ['Fish barrel', 'Tackle box', 'Big harpoonfish', 'Dragon harpoon', 'Tome of water', 'Tiny tempor', '6,000 Spirit flakes'],
+  'Any Moons unique': ['Eclipse moon helm', 'Eclipse moon chestplate', 'Eclipse moon tassets', 'Eclipse atlatl', 'Blood moon helm', 'Blood moon chestplate', 'Blood moon tassets', 'Dual macuahuitl', 'Blue moon helm', 'Blue moon chestplate', 'Blue moon tassets', 'Blue moon spear'],
+  'Full Odium': ['Odium ward', 'Malediction ward'],
+  'Any TFA purple': [
+    'Rondache',
+    'Zorya\'s tome',
+    'Horn of Bran',
+    'Ascension crossbows',
+    'Obligator',
+  ],
+
+  'Any Doom unique': [
+    'Mokhaiotl cloth',
+    'Eye of Ayak (uncharged)',
+    'Avernic treads',
+    'Dom',
+  ],
+
+  'Any Yama unique': [
+    'Oathplate helm',
+    'Oathplate chest',
+    'Oathplate legs',
+    'Soulflame horn',
+    'Yami',
+  ],
+
+  'Any Maggot King pre-roll': [
+    'Elder venator fang',
+    'Crimson kisten',
+  ],
+
+  'Any Mad Angel pre-roll': [
+    'Hallowfell',
+    'Jar of Light',
+    'Aggy',
+  ],
+
+  'Shellbane Gryphon unique': [
+    'Belle\'s folly (tarnished)',
+    'Jar of Feathers',
+    'Gull',
+  ],
+
+  '48 Oathplate shards': [
+    'Oathplate shards',
+  ],
+};
+function dropsFor(tileName) {
+  const key = Object.keys(DROPS).find(k => tileName.startsWith(k));
+  return key ? DROPS[key] : [];
+}
+const XICON = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>';
+const LINKICON = '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3.5" width="12" height="9" rx="1.5"/><circle cx="6" cy="7" r="1.2"/><path d="M14 11l-3.5-3.5L5 13"/></svg>';
 const TEAM_KEY = 'tower-of-ascension-team';
 
 const S = {teams: [], subs: [], settings: {}, admin: null, configured: true, ehb: null, audit: null, canWrite: false, loaded: false, stale: false, error: '',
-  view: 'tower', floorSel: null, teamSel: null, tileSel: null, draft: {}, confirm: null, busy: false, copyText: ''};
+  view: 'tower', proofEdit: null, floorSel: null, teamSel: null, tileSel: null, draft: {}, confirm: null, busy: false, copyText: ''};
 let dirty = false;
 try { S.teamSel = localStorage.getItem(TEAM_KEY); } catch (e) {}
 function pickTeam(id) { S.teamSel = id; try { localStorage.setItem(TEAM_KEY, id); } catch (e) {} }
@@ -203,6 +413,7 @@ function apply(st) {
   const before = S.settings.womId;
   S.teams = st.teams; S.subs = st.subs; S.settings = st.settings || {}; S.admin = st.admin; S.configured = st.configured;
   S.canWrite = !!st.admin; S.loaded = true; S.stale = false;
+  noteFresh(st.subs);
   if (S.settings.womId !== before) loadEhb();
 }
 async function load() {
@@ -264,19 +475,20 @@ function route() {
 function tilesHtml(f, opts = {}) {
   return TIERS.filter(t => f.tiles[t]).map(t => {
     const val = f.boss ? (f.n === 15 ? 'dmg varies' : '−' + TV[t] + ' HP') : '+' + TV[t] + ' AP';
-    return `<div class="tier t-${t}"><h4>${t} <span class="muted">${val}</span></h4><div class="tiles">` +
+    return `<div class="tier t-${t}"><h4>${t} <span>${val}</span></h4><div class="tiles">` +
       f.tiles[t].map((name, i) => {
         const key = t + ':' + i, n = opts.done ? (opts.done[key] || 0) : 0;
         const done = n && !f.boss, sel = opts.sel === key;
         const count = f.boss && n ? `<b>×${n}</b>` : '';
-        if (opts.pick && !done) return `<button class="tile${sel ? ' sel' : ''}" data-act="pick" data-key="${key}">${esc(name)}${count}</button>`;
-        return `<span class="tile${done ? ' done' : ''}">${esc(name)}${count}</span>`;
+        if (opts.pick && !done) return `<button class="tile${sel ? ' sel' : ''}" data-act="pick" data-key="${key}"${sel ? ` data-enter="sel-${key}"` : ''}>${esc(name)}${count}</button>`;
+        const fresh = done && motion.freshTiles.has(opts.tid + '|' + f.n + '|' + key);
+        return `<span class="tile${done ? ' done' : ''}${fresh ? ' fresh' : ''}">${done ? CHECK : ''}${esc(name)}${count}${done ? '<span class="sr">(done)</span>' : ''}</span>`;
       }).join('') + '</div></div>';
   }).join('');
 }
 function floorInfo(f, chosen) {
   let h = '';
-  for (const m of f.mech) h += `<p class="mech">${esc(m)}</p>`;
+  for (const m of f.mech) h += `<p class="mech"><strong>Mechanic</strong>${esc(m)}</p>`;
   if (f.options) h += `<h3>Reward for the kill: pick one buff</h3><div class="opts">` +
     f.options.map((o, i) => `<div class="opt${chosen === i ? ' on' : ''}"><strong>${esc(o.name)}</strong>${esc(o.text)}</div>`).join('') + '</div>';
   else if (f.reward) h += `<p><span class="muted">Reward:</span> ${esc(f.reward)}</p>`;
@@ -289,13 +501,23 @@ function unlockText(f) {
 function standingsHtml(st) {
   if (!S.loaded) return `<p class="muted">Loading event data…</p>`;
   if (!st.length) return `<div class="card"><p>No teams yet. ${S.canWrite ? 'Add them on the <a href="#teams" style="color:var(--accent)">Teams</a> tab.' : 'The event admin has not added teams.'}</p></div>`;
-  return `<div class="standings">` + st.map((s, i) => `
-    <button class="stand" style="--c:${tcolor(s.team)}" data-act="team" data-id="${s.team.id}">
-      <span class="name"><span>${esc(s.team.name)}</span><span class="muted">#${i + 1}</span></span>
-      <span class="big">${s.finished ? 'Ascended' : 'Floor ' + s.floor}</span>
-      <span class="bar${!s.finished && F(s.floor).boss ? ' hp' : ''}"><i style="width:${Math.round(s.pct * 100)}%"></i></span>
-      <span class="muted num">${fmt(s.ap)} AP · ${esc(s.label)}${S.settings.womId && S.ehb ? ' · ' + ehbFor(s.team).total.toFixed(1) + ' EHB' : ''}</span>
+  return `<div class="race">` + st.map((s, i) => `
+    <button class="stand" style="--c:${tcolor(s.team)}" data-act="team" data-id="${s.team.id}" data-flip="stand-${s.team.id}">
+      <span class="rank num" aria-label="Rank ${i + 1}">${i + 1}</span>
+      <span class="who"><span class="name">${esc(s.team.name)}</span>
+        <span class="meta muted num">${fmt(s.ap)} AP · ${esc(s.label)}${S.settings.womId && S.ehb ? ' · ' + ehbFor(s.team).total.toFixed(1) + ' EHB' : ''}</span></span>
+      ${trackHtml(s)}
+      <span class="at num">${s.finished ? 'Ascended' : 'Floor ' + s.floor}<small>of 30</small></span>
     </button>`).join('') + '</div>';
+}
+// 30 segments, one per floor; boss floors stand taller. Filled up to the team's floor, partial on the current one.
+function trackHtml(s) {
+  let h = '';
+  for (let n = 1; n <= 30; n++) {
+    const fill = s.finished || n < s.floor ? 1 : n === s.floor ? Math.round(s.pct * 100) / 100 : 0;
+    h += `<i class="${F(n).boss ? 'b' : ''}" style="--f:${fill}"></i>`;
+  }
+  return `<span class="track" aria-hidden="true" data-team="${s.team.id}" data-p="${s.finished ? 30 : s.floor - 1 + Math.round(s.pct * 100) / 100}">${h}</span>`;
 }
 function viewTower(st) {
   const me = st.find(s => s.team.id === S.teamSel) || st[0], sel = S.floorSel || (me ? me.floor : 1), f = F(sel);
@@ -306,7 +528,7 @@ function viewTower(st) {
       <span class="n">${n}</span>
       <span class="lbl">${x.boss ? `<span>${esc(x.name)}</span><small class="num">${fmt(x.hp)} HP · needs ${fmt(x.unlock)} AP</small>`
         : `<small class="num">${x.n === 1 ? 'Start' : x.unlock == null ? 'Opens on boss kill' : fmt(x.unlock) + ' AP'}</small>`}</span>
-      <span class="dots">${here.map(s => `<span class="dot" style="--c:${tcolor(s.team)}" title="${esc(s.team.name)}">${esc(s.team.name.slice(0, 1).toUpperCase())}</span>`).join('')}</span>
+      <span class="dots">${here.map(s => `<span class="dot" style="--c:${tcolor(s.team)}" title="${esc(s.team.name)}" data-flip="dot-${s.team.id}">${esc(s.team.name.slice(0, 1).toUpperCase())}</span>`).join('')}</span>
     </button>`;
   }
   const pills = st.length > 1 ? `<div class="pills"><span class="muted">Show the tower for</span>` + st.map(s => `<button class="pill" style="--c:${tcolor(s.team)}" data-act="mine" data-id="${s.team.id}" aria-pressed="${s.team.id === me.team.id}">${esc(s.team.name)}</button>`).join('') + '</div>' : '';
@@ -317,7 +539,7 @@ function viewTower(st) {
     <section class="card detail" id="detail">
       <div><h2>Floor ${f.n}${f.boss ? ' · ' + esc(f.name) : ''}</h2>
       <p class="muted num">${f.boss ? fmt(f.hp) + ' HP · ' : ''}${unlockText(f)}${f.boss ? ' · tiles repeat without limit' : ' · each tile once'}</p></div>
-      ${where}${floorInfo(f, me && me.team.buffs ? me.team.buffs[f.n] : undefined)}${tilesHtml(f, {done: me ? me.done[f.n] : null})}
+      ${where}${floorInfo(f, me && me.team.buffs ? me.team.buffs[f.n] : undefined)}${tilesHtml(f, {done: me ? me.done[f.n] : null, tid: me && me.team.id})}
     </section></div>`;
 }
 function dval(k, fallback = '') { return esc(S.draft[k] ?? fallback); }
@@ -330,28 +552,31 @@ function viewTeams(st) {
   if (!cur) return h + `<div class="card"><p>No teams yet.${S.canWrite ? ' Add the first one above.' : ''}</p></div>`;
   const t = cur.team, f = F(cur.floor), w = S.canWrite, hasEhb = !!(S.settings.womId && S.ehb), eh = ehbFor(t);
   // status + current floor
-  h += `<section class="card" style="border-top:3px solid ${tcolor(t)}">
-    <div class="row" style="justify-content:space-between"><div><h2>${esc(t.name)} · ${cur.finished ? 'Ascended' : 'Floor ' + cur.floor + (f.boss ? ' · ' + esc(f.name) : '')}</h2>
-      <p class="muted num">${fmt(cur.ap)} AP total · ${esc(cur.label)}${hasEhb ? ' · ' + eh.total.toFixed(1) + ' EHB gained' : ''}</p></div></div>
-    <div class="bar${!cur.finished && f.boss ? ' hp' : ''}" style="--c:${tcolor(t)}"><i style="width:${Math.round(cur.pct * 100)}%"></i></div>`;
+  h += `<section class="card" style="--c:${tcolor(t)}">
+    <div class="teamhead"><div style="display:flex;flex-direction:column;gap:8px"><h2>${esc(t.name)}</h2>
+      <p class="muted num">${cur.finished ? 'Ascended' : 'Floor ' + cur.floor + (f.boss ? ', ' + esc(f.name) : '')} · ${fmt(cur.ap)} AP total · ${esc(cur.label)}${hasEhb ? ' · ' + eh.total.toFixed(1) + ' EHB gained' : ''}</p></div></div>
+    ${trackHtml(cur)}`;
   if (!cur.finished) {
     h += floorInfo(f, t.buffs ? t.buffs[f.n] : undefined);
     if (f.n === 15) { const b = sealsBroken(cur); h += `<p class="num">Seals broken: ${b.length ? b.join(', ') : 'none'} (${4 - b.length} intact)</p>`; }
-    h += `<h3>${w ? 'Tap a tile to log it' : 'Tiles on this floor'}</h3>` + tilesHtml(f, {done: cur.done[cur.floor], pick: w, sel: S.tileSel});
+    h += `<h3>${w ? 'Tap a tile to log it' : 'Tiles on this floor'}</h3>` + tilesHtml(f, {done: cur.done[cur.floor], pick: w, sel: S.tileSel, tid: t.id});
     if (w && S.tileSel) {
       const [tier, idx] = S.tileSel.split(':'), name = f.tiles[tier] && f.tiles[tier][idx];
       if (name) {
         const buffs = Object.entries(t.buffs || {}).filter(([, i]) => i != null && i !== '').map(([n, i]) => F(+n).options[i]);
-        h += `<div class="card" style="background:var(--raised)">
+        h += `<div class="card" style="background:var(--raised)" data-enter="form-${S.tileSel}">
           <p><strong>${esc(name)}</strong> <span class="muted">${tier}</span></p>
           ${buffs.length ? `<p class="muted" style="font-size:15px">Active buffs, add them to the number yourself: ${buffs.map(b => `<strong>${esc(b.name)}</strong> (${esc(b.text)})`).join(' · ')}</p>` : ''}
           <div class="row">
-            <label class="grow">Player<input id="sub-player" list="members" data-draft="player" value="${dval('player')}" placeholder="RSN"></label>
-            <label class="grow">Drop or note<input id="sub-note" data-draft="note" value="${dval('note')}" placeholder="e.g. Tumeken's shadow"></label>
+            ${(t.members || []).length
+              ? `<label class="grow">Player<select id="sub-player" data-draft="player"><option value="">Choose a player</option>${t.members.map(m => `<option ${S.draft.player === m ? 'selected' : ''}>${esc(m)}</option>`).join('')}</select></label>`
+              : `<p class="grow muted" style="font-size:15px">Add this team's members below before logging drops.</p>`}
+            <label class="grow">Drop or note<input id="sub-note" list="drops" data-draft="note" value="${dval('note')}" placeholder="${dropsFor(name).length ? 'Pick or type a drop' : 'e.g. Tumeken\'s shadow'}" autocomplete="off"></label>
             <label style="width:110px">${f.boss ? 'Damage' : 'AP'}<input id="sub-value" type="number" data-draft="value" value="${dval('value', suggest(cur, tier))}"></label>
-            <button class="btn primary" data-act="log" ${S.busy ? 'disabled' : ''}>Log it</button>
+            <button class="btn primary" data-act="log" ${S.busy || !(t.members || []).length ? 'disabled' : ''}>Log it</button>
           </div>
-          <datalist id="members">${(t.members || []).map(m => `<option value="${esc(m)}">`).join('')}</datalist></div>`;
+          <label>Screenshot link <span class="muted">(optional: Discord, Imgur or Gyazo link)</span><input id="sub-proof" type="url" inputmode="url" data-draft="proof" value="${dval('proof')}" placeholder="https://" autocomplete="off"></label>
+          <datalist id="drops">${dropsFor(name).map(d => `<option value="${esc(d)}">`).join('')}</datalist></div>`;
       }
     }
   }
@@ -392,11 +617,18 @@ function logTable(subs, showTeam) {
   return `<div class="tablewrap"><table><thead><tr><th>When</th>${showTeam ? '<th>Team</th>' : ''}<th>Floor</th><th>Tile</th><th>Player</th><th>Note</th><th class="r">Value</th>${S.canWrite ? '<th></th>' : ''}</tr></thead><tbody>` +
     subs.map(s => {
       const adj = s.kind === 'adj', boss = !adj && F(s.floor).boss;
-      return `<tr><td class="num muted">${when(s.ts)}</td>${showTeam ? `<td>${esc(tn(s.team))}</td>` : ''}<td class="num">${adj ? '' : s.floor}</td>
-        <td class="t-${esc(s.tier)}">${adj ? '<em>Bonus AP</em>' : `<span style="color:var(--t)">●</span> ${esc(s.tileName)}`}</td><td>${esc(s.player)}</td><td>${esc(s.note)}</td>
+      return `<tr${motion.fresh.has(s.id) ? ' class="fresh"' : ''}><td class="num muted">${when(s.ts)}</td>${showTeam ? `<td>${esc(tn(s.team))}</td>` : ''}<td class="num">${adj ? '' : s.floor}</td>
+        <td class="t-${esc(s.tier)}">${adj ? '<em>Bonus AP</em>' : `<span class="swatch"></span>${esc(s.tileName)}`}</td><td>${esc(s.player)}</td><td>${noteCell(s)}</td>
         <td class="r num">${boss ? '−' + fmt(s.value) + ' HP' : (s.value >= 0 ? '+' : '') + fmt(s.value) + ' AP'}</td>
         ${S.canWrite ? `<td class="r">${S.confirm === 'sub:' + s.id ? `<button class="btn small danger" data-act="del-sub" data-id="${s.id}">Confirm</button>` : `<button class="btn small" data-act="ask" data-what="sub:${s.id}">Delete</button>`}</td>` : ''}</tr>`;
     }).join('') + '</tbody></table></div>';
+}
+function noteCell(s) {
+  if (S.canWrite && S.proofEdit === s.id) return `<span class="row" style="gap:6px;flex-wrap:nowrap"><input id="proof-edit" type="url" data-draft="proofEdit" value="${dval('proofEdit', s.proof || '')}" placeholder="https://" aria-label="Screenshot link" style="min-width:180px">
+    <button class="btn small primary" data-act="proof-save">Save</button><button class="btn small" data-act="proof-cancel">Cancel</button></span>`;
+  const shot = s.proof && isLink(s.proof) ? `<a class="proof" href="${esc(s.proof)}" target="_blank" rel="noopener noreferrer">${LINKICON}Screenshot</a>` : '';
+  const edit = S.canWrite && s.kind !== 'adj' ? `<button class="linkbtn" data-act="proof-edit" data-id="${esc(s.id)}">${s.proof ? 'Edit link' : 'Add screenshot'}</button>` : '';
+  return [esc(s.note), shot, edit].filter(Boolean).join(' ');
 }
 function discordText(st) {
   return ['**The Duke · Tower of Ascension standings**'].concat(st.map((s, i) =>
@@ -404,11 +636,25 @@ function discordText(st) {
 }
 function viewLog(st) {
   if (!S.loaded) return `<p class="muted">Loading event data…</p>`;
-  const f = S.draft.logTeam || '', subs = S.subs.filter(s => !f || s.team === f).sort((a, b) => b.ts - a.ts);
-  return `<div class="row"><label>Team<select id="log-team" data-draft="logTeam" data-rerender="1"><option value="">All teams</option>${S.teams.map(t => `<option value="${t.id}" ${f === t.id ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select></label>
-    <button class="btn" data-act="copy">Copy standings for Discord</button><span class="muted num">${subs.length} entries</span></div>
+  const d = S.draft, team = d.logTeam || '', player = d.logPlayer || '', floor = d.logFloor || '', tier = d.logTier || '', proof = d.logProof || '';
+  const inTeam = S.subs.filter(s => !team || s.team === team);
+  const players = [...new Set(inTeam.map(s => s.player).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  const subs = inTeam.filter(s => (!player || s.player === player) && (!floor || String(s.floor) === floor)
+    && (!tier || (tier === 'adj' ? s.kind === 'adj' : s.tier === tier))
+    && (!proof || (proof === 'yes' ? !!s.proof : s.kind !== 'adj' && !s.proof))).sort((a, b) => b.ts - a.ts);
+  const sel = (id, key, label, all, opts) => `<label>${label}<select id="${id}" data-draft="${key}" data-rerender="1"><option value="">${all}</option>${opts.map(([v, l]) => `<option value="${esc(v)}" ${d[key] === String(v) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>`;
+  const any = team || player || floor || tier || proof;
+  return `<div class="row filters">
+      ${sel('log-team', 'logTeam', 'Team', 'All teams', S.teams.map(t => [t.id, t.name]))}
+      ${sel('log-player', 'logPlayer', 'Player', 'All players', players.map(p => [p, p]))}
+      ${sel('log-floor', 'logFloor', 'Floor', 'All floors', FLOORS.map(f => [f.n, f.boss ? `${f.n} · ${f.name}` : f.n]))}
+      ${sel('log-tier', 'logTier', 'Tier', 'All tiers', [['elite', 'Elite'], ['hard', 'Hard'], ['medium', 'Medium'], ['easy', 'Easy'], ['adj', 'Bonus AP']])}
+      ${sel('log-proof', 'logProof', 'Screenshot', 'Any', [['yes', 'Has screenshot'], ['no', 'Missing screenshot']])}
+      ${any ? '<button class="btn" data-act="log-clear">Clear filters</button>' : ''}
+    </div>
+    <div class="row" style="justify-content:space-between;align-items:center"><span class="muted num">${subs.length} of ${S.subs.length} entries</span><button class="btn" data-act="copy">Copy standings for Discord</button></div>
     ${S.copyText ? `<textarea id="copy-text" readonly aria-label="Standings text">${esc(S.copyText)}</textarea>` : ''}
-    <section class="card">${logTable(subs, true)}</section>`;
+    <section class="card">${subs.length || !S.subs.length ? logTable(subs, true) : '<p class="muted">No entries match these filters.</p>'}</section>`;
 }
 function viewRules() {
   const bosses = FLOORS.filter(f => f.boss);
@@ -463,6 +709,7 @@ function auditText(r) {
   const d = r.detail; if (!d) return '';
   if (r.action === 'addSub') return `${d.teamName}: ${d.kind === 'adj' ? 'bonus AP' : 'floor ' + d.floor + ', ' + d.tileName} (${d.value})${d.player ? ' by ' + d.player : ''}${d.note ? ' · ' + d.note : ''}`;
   if (r.action === 'delSub') return d.entry ? `removed ${d.entry.kind === 'adj' ? 'bonus AP' : 'floor ' + d.entry.floor + ', ' + d.entry.tileName} (${d.entry.value})${d.entry.player ? ' by ' + d.entry.player : ''}` : 'entry already gone';
+  if (r.action === 'setProof') return `${d.teamName || '?'}: ${d.tileName || 'entry'} · ${d.proof ? 'screenshot ' + d.proof : 'screenshot removed'}`;
   if (r.action === 'addTeam') return d.name;
   if (r.action === 'delTeam') return `${d.team ? d.team.name : d.id}, with ${(d.removedEntries || []).length} entries`;
   if (r.action === 'patchTeam') return `${d.team}: ${JSON.stringify(d.patch)}`;
@@ -472,7 +719,8 @@ function render(force) {
   const a = document.activeElement;
   if (!force && a && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName) && a.closest('#app')) { dirty = true; return; }
   dirty = false;
-  document.getElementById('nav').innerHTML = VIEWS.map(([k, l]) => `<a href="#${k}" ${S.view === k ? 'aria-current="page"' : ''}>${l}</a>`).join('');
+  const before = snapshot();
+  document.getElementById('nav').innerHTML = VIEWS.map(([k, l]) => `<a href="#${k}" ${S.view === k ? 'aria-current="page"' : ''}>${l}${S.view === k ? '<span class="ink"></span>' : ''}</a>`).join('');
   const m = document.getElementById('mode');
   m.textContent = !S.loaded ? 'Connecting' : S.admin ? 'Admin · ' + S.admin : 'Live';
   m.className = 'mode' + (S.loaded ? ' live' : '');
@@ -482,11 +730,80 @@ function render(force) {
   document.getElementById('banners').innerHTML = b;
   const st = standings();
   document.getElementById('app').innerHTML = {tower: viewTower, teams: viewTeams, log: viewLog, rules: viewRules, admin: viewAdmin}[S.view](st);
+  afterRender(before);
+}
+
+/* ---------- motion ---------- */
+const STILL = matchMedia('(prefers-reduced-motion: reduce)');
+const EASE = 'cubic-bezier(.16,1,.3,1)';
+const motion = {prog: new Map(), known: null, fresh: new Set(), freshTiles: new Set(), enter: new Set(), dotsRisen: false};
+// Entries that arrived since the last load, from this admin or anyone else, so they can glow once.
+function noteFresh(subs) {
+  const ids = new Set(subs.map(s => s.id));
+  if (motion.known) for (const s of subs) if (!motion.known.has(s.id)) {
+    motion.fresh.add(s.id);
+    if (s.kind !== 'adj') motion.freshTiles.add(s.team + '|' + s.floor + '|' + s.tier + ':' + s.tile);
+  }
+  motion.known = ids;
+}
+function snapshot() {
+  const m = new Map();
+  document.querySelectorAll('[data-flip]').forEach(el => m.set(el.dataset.flip, el.getBoundingClientRect()));
+  return m;
+}
+// FLIP: rows that change rank and tokens that change floor glide from where they were.
+// On the first paint of the tower, every token rises from Floor 1.
+function flip(before) {
+  const base = !motion.dotsRisen && document.querySelector('.fl[data-n="1"] .dots');
+  if (document.querySelector('.dot')) motion.dotsRisen = true;
+  if (STILL.matches) return;
+  const b = base && base.getBoundingClientRect();
+  document.querySelectorAll('[data-flip]').forEach(el => {
+    const r1 = el.getBoundingClientRect(), isDot = el.classList.contains('dot');
+    let r0 = before.get(el.dataset.flip), intro = false;
+    if (!r0 && b && isDot) { r0 = {left: r1.left, top: b.top + (b.height - r1.height) / 2}; intro = true; }
+    if (!r0) return;
+    const dx = r0.left - r1.left, dy = r0.top - r1.top;
+    if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+    const dist = Math.min(1, Math.hypot(dx, dy) / 1000);
+    el.animate([{transform: `translate(${dx}px,${dy}px)`}, {transform: 'none'}],
+      {duration: (isDot ? 650 : 450) + dist * 650, delay: intro ? 250 : 0, easing: EASE, fill: 'backwards'});
+  });
+}
+// The climb: each bar fills floor by floor from where it last stood (zero on first load) to where the team is now.
+function climb() {
+  document.querySelectorAll('.track[data-team]').forEach(tr => {
+    const id = tr.dataset.team, now = +tr.dataset.p, known = motion.prog.has(id), was = known ? motion.prog.get(id) : 0;
+    motion.prog.set(id, now);
+    if (STILL.matches || now === was) return;
+    const from = Math.floor(Math.min(was, now)), to = Math.min(30, Math.ceil(Math.max(was, now)));
+    const step = Math.min(known ? 110 : 60, 900 / Math.max(1, to - from));
+    for (let n = from; n < to; n++) {
+      const a = Math.max(0, Math.min(1, was - n)), z = Math.max(0, Math.min(1, now - n)), seg = tr.children[n];
+      if (a === z || !seg) continue;
+      const delay = (known ? 0 : 200) + (n - from) * step;
+      seg.animate([{'--f': a}, {'--f': z}], {duration: 420, delay, easing: EASE, fill: 'backwards'});
+      if (known && seg.classList.contains('b')) seg.animate([{filter: 'brightness(2.4)'}, {filter: 'none'}], {duration: 700, delay: delay + 200, easing: 'ease-out'});
+    }
+    if (known && Math.floor(now) > Math.floor(was)) { const row = tr.closest('.stand'); if (row) row.classList.add('promoted'); }
+  });
+}
+function afterRender(before) {
+  flip(before); climb();
+  const keys = new Set();
+  document.querySelectorAll('[data-enter]').forEach(el => { const k = el.dataset.enter; keys.add(k); if (!motion.enter.has(k)) el.classList.add('entering'); });
+  motion.enter = keys; motion.fresh.clear(); motion.freshTiles.clear();
+}
+// Wrap a state change in a view transition when the browser has them and motion is welcome.
+function morph(kind, fn) {
+  if (!document.startViewTransition || STILL.matches || document.hidden) return fn();
+  const root = document.documentElement; root.dataset.vt = kind;
+  document.startViewTransition(fn).finished.finally(() => { if (root.dataset.vt === kind) delete root.dataset.vt; });
 }
 
 /* ---------- events ---------- */
 const actions = {
-  floor(el) { S.floorSel = +el.dataset.n; render(true); if (matchMedia('(max-width:760px)').matches) document.getElementById('detail').scrollIntoView({block: 'start'}); },
+  floor(el) { morph('floor', () => { S.floorSel = +el.dataset.n; render(true); }); if (matchMedia('(max-width:760px)').matches) document.getElementById('detail').scrollIntoView({block: 'start'}); },
   mine(el) { pickTeam(el.dataset.id); S.floorSel = null; render(true); },
   team(el) { pickTeam(el.dataset.id); S.floorSel = null; S.tileSel = null; S.confirm = null; if (S.view !== 'teams') location.hash = 'teams'; else render(true); },
   pick(el) { S.tileSel = el.dataset.key; delete S.draft.value; render(true); },
@@ -504,16 +821,27 @@ const actions = {
   async 'rm-member'(el) { const t = curTeam(); await Store.patchTeam(t.id, {members: (t.members || []).filter(m => norm(m) !== norm(el.dataset.name))}); },
   async log() {
     const t = curTeam(), st = compute(t, S.subs), f = F(st.floor), [tier, idx] = S.tileSel.split(':');
+    if (!(t.members || []).includes(S.draft.player)) { S.error = 'Choose which player got the drop.'; return render(true); }
     const raw = S.draft.value, value = raw === undefined || raw === '' ? suggest(st, tier) : Number(raw);
     if (!Number.isFinite(value)) { S.error = 'Enter a number for the value.'; return render(true); }
-    const ok = await Store.addSub({team: t.id, kind: 'tile', floor: st.floor, tier, tile: +idx, tileName: f.tiles[tier][idx],
-      player: (S.draft.player || '').trim(), note: (S.draft.note || '').trim(), value});
-    if (ok) { S.tileSel = null; delete S.draft.value; delete S.draft.note; render(true); }
+    const proof = (S.draft.proof || '').trim();
+    if (proof && !isLink(proof)) { S.error = 'Paste a full screenshot link that starts with https://'; return render(true); }
+    const before = new Set(S.subs.map(s => s.id)), tileName = f.tiles[tier][idx];
+    const ok = await Store.addSub({team: t.id, kind: 'tile', floor: st.floor, tier, tile: +idx, tileName,
+      player: (S.draft.player || '').trim(), note: (S.draft.note || '').trim(), proof, value});
+    if (ok) {
+      S.tileSel = null; delete S.draft.value; delete S.draft.note; delete S.draft.proof; render(true);
+      announce(t, st, `Logged ${tileName} for ${t.name} (${f.boss ? '−' + fmt(value) + ' HP' : '+' + fmt(value) + ' AP'}).`, S.subs.find(s => !before.has(s.id)));
+    }
   },
   async adj() {
     const t = curTeam(), value = Number(S.draft.adjValue);
     if (!S.draft.adjValue || !Number.isFinite(value)) { S.error = 'Enter the bonus AP as a number.'; return render(true); }
-    if (await Store.addSub({team: t.id, kind: 'adj', floor: 0, tier: '', tile: -1, tileName: '', player: '', note: (S.draft.adjNote || '').trim(), value})) { delete S.draft.adjValue; delete S.draft.adjNote; render(true); }
+    const st = compute(t, S.subs), before = new Set(S.subs.map(s => s.id));
+    if (await Store.addSub({team: t.id, kind: 'adj', floor: 0, tier: '', tile: -1, tileName: '', player: '', note: (S.draft.adjNote || '').trim(), value})) {
+      delete S.draft.adjValue; delete S.draft.adjNote; render(true);
+      announce(t, st, `Added ${value >= 0 ? '+' : ''}${fmt(value)} bonus AP for ${t.name}.`, S.subs.find(s => !before.has(s.id)));
+    }
   },
   async login() {
     if (S.busy) return; S.busy = true; S.error = '';
@@ -523,12 +851,53 @@ const actions = {
   async logout() { try { await api('/api/logout', {}); } catch (e) {} S.audit = null; await load(); render(true); },
   async 'save-wom'() { if (await write({op: 'setSettings', womId: S.draft.womId ?? S.settings.womId ?? ''})) { delete S.draft.womId; render(true); } },
   audit() { loadAudit(); },
+  async undo(el) { closeToast(); if (await Store.delSub(el.dataset.id)) toast({msg: 'Entry removed.'}); },
+  'toast-close'() { closeToast(); },
+  'goto-buff'(el) {
+    closeToast();
+    const go = () => { const s = document.getElementById('buff-' + el.dataset.n); if (s) { s.scrollIntoView({block: 'center'}); s.focus(); } };
+    if (S.view !== 'teams') { location.hash = 'teams'; setTimeout(go, 60); } else go();
+  },
+  'proof-edit'(el) { S.proofEdit = el.dataset.id; delete S.draft.proofEdit; render(true); const i = document.getElementById('proof-edit'); if (i) i.focus(); },
+  'proof-cancel'() { S.proofEdit = null; render(true); },
+  async 'proof-save'() {
+    const proof = (S.draft.proofEdit || '').trim();
+    if (proof && !isLink(proof)) { S.error = 'Paste a full screenshot link that starts with https://'; return render(true); }
+    if (await write({op: 'setProof', id: S.proofEdit, proof})) { S.proofEdit = null; delete S.draft.proofEdit; render(true); toast({msg: proof ? 'Screenshot added.' : 'Screenshot removed.'}); }
+  },
+  'log-clear'() { for (const k of ['logTeam', 'logPlayer', 'logFloor', 'logTier', 'logProof']) delete S.draft[k]; render(true); },
   async 'del-sub'(el) { S.confirm = null; await Store.delSub(el.dataset.id); },
   async copy() {
     S.copyText = discordText(standings());
     try { await navigator.clipboard.writeText(S.copyText); S.copyText = ''; S.error = ''; flash('Standings copied.'); } catch (e) { render(true); const ta = document.getElementById('copy-text'); if (ta) ta.select(); }
   },
 };
+/* ---------- toast: confirms a log, offers undo, and calls out floor and boss milestones ---------- */
+const isLink = u => /^https?:\/\/\S+$/i.test(u);
+let toastTimer = null;
+function toast({msg, milestone, sub, buffFloor}) {
+  const el = document.getElementById('toast');
+  el.innerHTML = `<div class="toast-body">${milestone ? `<strong class="toast-big">${esc(milestone)}</strong>` : ''}<span>${esc(msg)}</span></div>
+    <div class="toast-acts">${buffFloor ? `<button class="btn small primary" data-act="goto-buff" data-n="${buffFloor}">Pick buff</button>` : ''}${sub ? `<button class="btn small" data-act="undo" data-id="${esc(sub.id)}">Undo</button>` : ''}<button class="toast-x" data-act="toast-close" aria-label="Dismiss">${XICON}</button></div>`;
+  el.className = 'toast show' + (milestone ? ' big' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(closeToast, milestone ? 14000 : 8000);
+}
+function closeToast() { clearTimeout(toastTimer); document.getElementById('toast').className = 'toast'; }
+// Compare the team before and after a log, so the toast can say what the log just did.
+function announce(team, was, msg, sub) {
+  const now = compute(team, S.subs);
+  let milestone = '', buffFloor = null;
+  if (now.finished && !was.finished) milestone = `${team.name} ascended!`;
+  else if (now.floor > was.floor) {
+    const f = F(was.floor);
+    milestone = f.boss ? `Boss down: ${f.name}` : `Floor ${was.floor} cleared`;
+    msg = `${team.name} is now on Floor ${now.floor}. ${msg}`;
+    if (f.boss && f.options) buffFloor = f.n;
+  }
+  toast({msg, milestone, sub, buffFloor});
+  if (milestone && window.skyStrike) skyStrike(buffFloor || now.finished ? 3 : 1);
+}
 function curTeam() { return S.teams.find(t => t.id === S.teamSel) || standings()[0].team; }
 function flash(msg) { const m = document.getElementById('mode'), old = m.textContent; m.textContent = msg; setTimeout(() => { if (m.textContent === msg) m.textContent = old; }, 2000); }
 document.addEventListener('click', e => {
@@ -546,11 +915,11 @@ document.addEventListener('change', async e => {
 });
 document.addEventListener('keydown', e => {
   if (e.key !== 'Enter' || e.target.tagName !== 'INPUT') return;
-  const map = {'new-team': 'add-team', 'new-member': 'add-member', 'sub-player': 'log', 'sub-note': 'log', 'sub-value': 'log', 'adj-value': 'adj', 'adj-note': 'adj', 'adm-name': 'login', 'adm-pass': 'login', 'wom-id': 'save-wom'};
+  const map = {'new-team': 'add-team', 'new-member': 'add-member', 'sub-player': 'log', 'sub-note': 'log', 'sub-value': 'log', 'sub-proof': 'log', 'proof-edit': 'proof-save', 'adj-value': 'adj', 'adj-note': 'adj', 'adm-name': 'login', 'adm-pass': 'login', 'wom-id': 'save-wom'};
   const act = map[e.target.id]; if (act) { e.preventDefault(); actions[act](e.target); }
 });
 document.addEventListener('focusout', () => { if (dirty) setTimeout(() => { if (dirty) render(); }, 300); });
-addEventListener('hashchange', () => { route(); S.confirm = null; S.error = ''; render(true); scrollTo(0, 0); if (S.view === 'admin') loadAudit(); });
+addEventListener('hashchange', () => { morph('view', () => { route(); S.confirm = null; S.error = ''; render(true); scrollTo(0, 0); }); if (location.hash === '#admin') loadAudit(); });
 /* ---------- background: drifting smoke with occasional lightning ---------- */
 (function () {
   const c = document.getElementById('sky'), x = c.getContext('2d');
@@ -563,7 +932,7 @@ addEventListener('hashchange', () => { route(); S.confirm = null; S.error = ''; 
       vx: (Math.random() - .5) * .014, vy: (Math.random() - .5) * .007, a: .07 + Math.random() * .11, hue: 212 + Math.random() * 16}));
     specks = Array.from({length: 46}, () => ({x: Math.random() * w, y: Math.random() * h, r: .4 + Math.random() * 1.1, v: .004 + Math.random() * .01, a: .25 + Math.random() * .55}));
   }
-  function bolt() {
+  function bolt(big = false) {
     let px = w * (.1 + Math.random() * .8), py = 0; const pts = [[px, py]], end = h * (.45 + Math.random() * .55);
     while (py < end) { px += (Math.random() - .5) * w * .07; py += h * (.02 + Math.random() * .05); pts.push([px, py]); }
     const branches = [];
@@ -572,8 +941,10 @@ addEventListener('hashchange', () => { route(); S.confirm = null; S.error = ''; 
       for (let k = 0; k < 5; k++) { bx += dir * w * (.01 + .03 * Math.random()); by += h * .03 * Math.random() + h * .01; br.push([bx, by]); }
       branches.push(br);
     }
-    bolts.push({pts, branches, life: 1});
+    bolts.push({pts, branches, life: 1, big});
   }
+  // A milestone calls down a burst of strikes, so a boss kill lands as an event, not a line of text.
+  window.skyStrike = n => { if (still || document.hidden) return; for (let i = 0; i < n; i++) setTimeout(() => bolt(true), i * 170); next = performance.now() + 6000; };
   function line(pts, a, wd) {
     x.beginPath(); pts.forEach((p, i) => i ? x.lineTo(p[0], p[1]) : x.moveTo(p[0], p[1]));
     x.strokeStyle = `rgba(190,225,255,${a})`; x.lineWidth = wd; x.stroke();
@@ -597,7 +968,7 @@ addEventListener('hashchange', () => { route(); S.confirm = null; S.error = ''; 
     if (t > next) { bolt(); next = t + 3000 + Math.random() * 6000; }
     bolts = bolts.filter(b => b.life > 0);
     for (const b of bolts) {
-      x.fillStyle = `rgba(70,140,255,${b.life * .05})`; x.fillRect(0, 0, w, h);
+      x.fillStyle = `rgba(70,140,255,${b.life * (b.big ? .1 : .035)})`; x.fillRect(0, 0, w, h);
       x.shadowColor = '#5fb2ff'; x.shadowBlur = 14;
       line(b.pts, b.life * .9, 1.4); for (const br of b.branches) line(br, b.life * .5, .8);
       x.shadowBlur = 0; b.life -= dt / 500;

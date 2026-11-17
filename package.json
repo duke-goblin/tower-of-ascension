@@ -5,7 +5,7 @@
   "type": "module",
   "description": "The Duke clan: Tower of Ascension event tracker",
   "scripts": {
-    "dev": "node scripts/dev.js"
+    "dev": "node --env-file-if-exists=.env.local scripts/dev.js"
   },
   "dependencies": {
     "pg": "^8.13.1"
