@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tower of Ascension Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700&family=Cinzel:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Layout idea: the tower is a literal 30-row column on the left; everything else reads off it. Single dark theme by choice: The Duke clan blue over drifting smoke and lightning. */
+  color-scheme:dark;
+  --bg:#03060f; --surface:rgba(14,22,40,.84); --raised:rgba(30,44,74,.88); --line:#2a3b61;
+  --ink:#e6eefc; --muted:#8fa2c6; --accent:#4aa8ff; --boss:#ef6a6a;
+  --easy:#6fcf7f; --medium:#46d1c0; --hard:#b893f5; --elite:#f59a4f;
+  --display:"Cinzel",Georgia,serif; --body:"Alegreya Sans","Segoe UI",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:400 17px/1.45 var(--body)}
+h1,h2,h3{font-family:var(--display);font-weight:600;margin:0;text-wrap:balance;letter-spacing:.02em}
+h1{font-size:22px;font-weight:800;color:var(--accent);text-shadow:0 0 18px rgba(74,168,255,.55);display:flex;flex-direction:column;line-height:1.15}
+h1 small{font:700 12px var(--body);letter-spacing:.32em;text-transform:uppercase;color:var(--muted);text-shadow:none}
+.crest{height:84px;width:auto;border-radius:8px;border:1px solid var(--line);box-shadow:0 0 24px rgba(40,110,255,.45)}
+#sky{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.wrap{position:relative;z-index:1}
+h2{font-size:18px} h3{font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-family:var(--body);font-weight:700}
+p{margin:0}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.wrap{max-width:1180px;margin:0 auto;padding:16px}
+header.top{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;border-bottom:1px solid var(--line);padding-bottom:12px}
+nav{display:flex;gap:4px;flex-wrap:wrap}
+nav a{padding:6px 14px;border-radius:6px;color:var(--muted);text-decoration:none;font-weight:700}
+nav a[aria-current="page"]{background:var(--raised);color:var(--ink)}
+.mode{margin-left:auto;font-size:14px;padding:4px 10px;border-radius:99px;border:1px solid var(--line);color:var(--muted)}
+.mode.live{color:var(--easy);border-color:var(--easy)}
+.banner{background:var(--raised);border-left:3px solid var(--accent);padding:10px 14px;border-radius:4px;margin-top:12px;font-size:16px}
+.banner.err{border-color:var(--boss)}
+main{display:flex;flex-direction:column;gap:20px;margin-top:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.btn{background:var(--raised);border:1px solid var(--line);border-radius:6px;padding:6px 12px;font-weight:700}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:#04101f;border-color:var(--accent)}
+.btn.danger{color:var(--boss)}
+.btn.small{padding:2px 8px;font-size:14px}
+.btn:disabled{opacity:.5;cursor:default}
+input,select{background:rgba(7,11,22,.8);border:1px solid var(--line);border-radius:6px;padding:6px 10px;min-width:0}
+label{font-size:14px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.grow{flex:1 1 160px}
+
+/* standings */
+.standings{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.stand{background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--c);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;text-align:left}
+.stand .name{font-weight:700;font-size:18px;display:flex;justify-content:space-between;gap:8px}
+.stand .big{font-family:var(--display);font-size:26px;line-height:1.1}
+.bar{height:8px;background:var(--bg);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--c,var(--accent));border-radius:99px}
+.bar.hp i{background:var(--boss)}
+
+/* tower */
+.towergrid{display:grid;grid-template-columns:minmax(280px,360px) 1fr;gap:20px;align-items:start}
+.tower{display:flex;flex-direction:column;gap:3px}
+.fl{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:5px 10px;text-align:left;min-height:36px}
+.fl:hover{border-color:var(--accent)}
+.fl[aria-pressed="true"]{border-color:var(--accent);background:var(--raised)}
+.fl.boss{border-left:3px solid var(--boss);min-height:48px}
+.fl.cur{border-color:var(--accent);box-shadow:0 0 16px rgba(74,168,255,.55),inset 0 0 0 1px var(--accent)}
+.here{font-size:15px;color:var(--muted)}
+.here.on{color:var(--accent);font-weight:700}
+.fl .n{font-family:var(--display);font-size:16px;color:var(--muted)}
+.fl.boss .n{color:var(--boss)}
+.fl .lbl{display:flex;flex-direction:column;line-height:1.2;min-width:0}
+.fl .lbl small{color:var(--muted);font-size:13px}
+.dots{display:flex;gap:3px;flex-wrap:wrap;justify-content:flex-end}
+.dot{width:22px;height:22px;border-radius:50%;background:var(--c);color:#111;font-size:12px;font-weight:700;display:grid;place-items:center}
+.detail{position:sticky;top:12px}
+.tier{display:flex;flex-direction:column;gap:6px}
+.tier h4{margin:0;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--t)}
+.tiles{display:flex;flex-wrap:wrap;gap:6px}
+.tile{border:1px solid var(--line);border-left:3px solid var(--t);background:var(--raised);border-radius:5px;padding:5px 10px;font-size:15px;text-align:left;max-width:100%}
+button.tile:hover{border-color:var(--accent);border-left-color:var(--t)}
+.tile.done{opacity:.5;text-decoration:line-through}
+.tile.sel{outline:2px solid var(--accent)}
+.tile b{color:var(--t);margin-left:6px;text-decoration:none;display:inline-block}
+.t-easy{--t:var(--easy)} .t-medium{--t:var(--medium)} .t-hard{--t:var(--hard)} .t-elite{--t:var(--elite)}
+.mech{border-left:3px solid var(--boss);padding:6px 12px;background:var(--raised);border-radius:4px;font-size:16px}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}
+.opt{border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-size:15px}
+.opt.on{border-color:var(--accent)}
+.opt strong{display:block;color:var(--accent)}
+
+.pills{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.pill{border:1px solid var(--line);border-radius:99px;padding:4px 14px;background:var(--surface);font-weight:700;display:flex;gap:6px;align-items:center}
+.pill[aria-pressed="true"]{background:var(--raised);border-color:var(--c)}
+.pill::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--c)}
+.chip{display:inline-flex;gap:6px;align-items:center;background:var(--raised);border-radius:99px;padding:2px 10px;font-size:15px}
+.chip button{border:0;background:none;color:var(--muted);padding:0 2px}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;align-items:start}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-size:13px;text-transform:uppercase;letter-spacing:.06em}
+td.r,th.r{text-align:right}
+.prose{max-width:65ch;display:flex;flex-direction:column;gap:10px}
+.prose ol,.prose ul{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px}
+.tierkey{display:flex;gap:8px;flex-wrap:wrap}
+.tierkey span{border-left:3px solid var(--t);background:var(--raised);padding:4px 10px;border-radius:4px;font-size:15px}
+textarea{width:100%;min-height:120px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:6px;font:14px/1.4 ui-monospace,monospace;padding:8px}
+@media (max-width:760px){.towergrid{grid-template-columns:1fr}.detail{position:static;order:-1}.mode{margin-left:0}}
+@media (prefers-reduced-motion:no-preference){.bar i{transition:width .3s}}
+</style>
+</head>
+<body>
+<canvas id="sky" aria-hidden="true"></canvas>
+<div class="wrap">
+  <header class="top">
+    <img class="crest" src="/banner.png" alt="Welcome to The Duke, home of uncommon sense" width="389" height="218">
+    <h1><small>The Duke · Home of uncommon sense</small>Tower of Ascension</h1>
+    <nav id="nav" aria-label="Sections"></nav>
+    <span id="mode" class="mode">Connecting</span>
+  </header>
+  <div id="banners"></div>
+  <main id="app"></main>
+</div>
+<script>
+const FLOORS = [{"n":1,"boss":false,"unlock":0,"tiles":{"elite":["Vorkath tertiary (any 1/1000+, including pet and jar)","Any TFA purple (excl. folio)","Inferno cape"],"hard":["Any ToB purple (incl. pet)","48 Oathplate shards (drops)","Any GWD boss unique (excl. Godsword shards, incl. pet)"],"medium":["Any CoX purple (incl. pet)","Any ToA purple (incl. pet)","Full Odium -or- Malediction ward","Zenyte shard","Zulrah unique (any, incl. pet and jar)"],"easy":["Any Moons unique (excl. Atlatl dart)","Any Barrows unique","Any Mad Angel pre-roll (excl. teleport)","Fire Cape"]},"mech":[]},{"n":2,"boss":false,"unlock":55,"tiles":{"elite":["Quiver","Inferno cape","Vorkath tertiary (any 1/1000+, including pet and jar)"],"hard":["Any ToB purple (incl. pet)","48 Oathplate shards (drops)","Any DT2 boss unique (excl. teleport tab, quartz, gold ring and awakener's orbs)","Any Yama unique (excl. shards, incl. pet)"],"medium":["Any ToA purple (incl. pet)","Any CoX purple (incl. pet)","Any Tormented Demon unique","Venator shard","Zalcano tertiary (incl. pet)","Unsired -or- Grotesque Guardians unique (incl. pet and jar)"],"easy":["Any Barrows unique","Any Moons unique (excl. Atlatl dart)","Gain 200k Sailing XP"]},"mech":[]},{"n":3,"boss":false,"unlock":115,"tiles":{"elite":["Any Colosseum unique (excl. quiver)","Any TFA purple (excl. folio)","Quiver"],"hard":["Any ToB purple (incl. pet)","48 Oathplate shards (drops)","Any Yama unique (excl. shards, incl. pet)","Any GWD boss unique (excl. Godsword shards, incl. pet)"],"medium":["Any CoX purple (incl. pet)","Any ToA purple (incl. pet)","Any Tormented Demon unique","Zulrah unique (any, incl. pet and jar)","Any Gauntlet unique (excl. cape and crystal shards)","Any Wildy boss rings (Tyrannical, Ring of the gods, Treasonous)","Venator shard"],"easy":["Gain 100k Hunter XP","Gain 100k Runecraft XP"]},"mech":[]},{"n":4,"boss":false,"unlock":180,"tiles":{"elite":["Vorkath tertiary (any 1/1000+, including pet and jar)","Quiver","Inferno cape"],"hard":["Any ToB purple (incl. pet)","48 Oathplate shards (drops)","Any DT2 boss unique (excl. teleport tab, quartz, gold ring and awakener's orbs)","Any Yama unique (excl. shards, incl. pet)","Any GWD boss unique (excl. Godsword shards, incl. pet)"],"medium":["Any ToA purple (incl. pet)","Any CoX purple (incl. pet)","Any Tormented Demon unique","Zalcano tertiary (incl. pet)","Zenyte shard","Unsired -or- Grotesque Guardians unique (incl. pet and jar)","Venator shard"],"easy":["Gain 100k Thieving XP"]},"mech":[]},{"n":5,"boss":true,"unlock":255,"tiles":{"elite":["Any TFA purple (excl. folio)"],"hard":["Any ToB purple (incl. pet)","48 Oathplate shards (drops)","Any GWD boss unique (excl. Godsword shards, incl. pet)"],"medium":["Any ToA purple (incl. pet)","Any CoX purple (incl. pet)","Dragon pickaxe","Zulrah unique (any, incl. pet and jar)","KQ unique (incl. head, dragon chain, dragon pick, dragon 2h, jar and pet)"],"easy":["Any Barrows unique","Any Moons unique (excl. Atlatl dart)","3x Scurrius spines (solo)"]},"mech":["The first time the team completes a tile from each difficulty tier during the fight, it earns a one-time bonus of +5 damage per tier."],"name":"The Gatekeeper","hp":200,"reward":"A choice of 3 buffs","options":[{"name":"Bane of the Guardians","text":"+10% damage against subsequent bosses."},{"name":"Ascendant Momentum","text":"Gain +1 AP for every normal-floor tile completed"},{"name":"Fortune's Favor","text":"Reduce dry-protection KC requirements by 20% (rounded up)"}]},{"n":6,"boss":false,"unlock":null,"tiles":{"elite":["Any Colosseum unique (excl. quiver)","Any Doom unique (incl. pet)","Any TFA purple (excl. folio)"],"hard":["Any ToB purple (incl. pet)","48 Oathplate shards (drops)","Any DT2 boss unique (excl. teleport tab, quartz, gold ring and awakener's orbs)","Any GWD boss unique (excl. Godsword shards, incl. pet)"],"medium":["Any ToA purple (incl. pet)","Any CoX purple (incl. pet)","Any Tormented Demon unique","Any DKS ring","Any Kraken unique (trident, tentacle, pet or jar) -or- Any Thermonuclear pre-roll (incl. pet and jar)"],"easy":["Shellbane Gryphon unique (folly, jar or pet)","Blood shard","Gain 100k Fishing XP"]},"mech":[]},{"n":7,"boss":false,"unlock":330,"tiles":{"elite":["Any TFA purple (excl. folio)","Quiver","Vorkath tertiary (any 1/1000+, including pet and jar)"],"hard":["Any ToB purple (incl. pet)","48 Oathplate shards (drops)","Any Yama unique (excl. shards, incl. pet)","Any DT2 boss unique (excl. teleport tab, quartz, gold ring and awakener's orbs)"],"medium":["Any CoX purple (incl. pet)","Any ToA purple (incl. pet)","Any Elemental staff crown","Any Tormented Demon unique","Any Kraken unique (trident, tentacle, pet or jar) -or- Any Thermonuclear pre-roll (incl. pet and jar)","Zulrah unique (any, incl. pet and jar)","Any Gauntlet unique (excl. cape and crystal shards)"],"easy":["Unique or Statuette from Revs (any)","Gain 100k Mining XP"]},"mech":[]},{"n":8,"boss":false,"unlock":415,"tiles":{"elite":["Any Colosseum unique (excl. quiver)","Any Doom unique (incl. pet)","Inferno cape"],"hard":["Any ToB purple (incl. pet)","48 Oathplate shards (drops)","Any DT2 boss unique (excl. teleport tab, quartz, gold ring and awakener's orbs)","Any GWD boss unique (excl. Godsword shards, incl. pet)","Any Cerberus unique"],"medium":["Any CoX purple (incl. pet)","Any ToA purple (incl. pet)","Any DKS ring","Unsired -or- Grotesque Guardians unique (incl. pet and jar)","Zenyte shard","Any Araxxor unique (incl. pet and jar) -or- Any Alchemical Hydra Unique (excl. thrownaxe and knives, incl. pet and jar)","Any Elemental staff crown"],"easy":["Gain 100k Agility XP"]},"mech":[]},{"n":9,"boss":false,"unlock":505,"tiles":{"elite":["Any Colosseum unique (excl. quiver)","Any Doom unique (incl. pet)","Quiver"],"hard":["Any ToB purple (incl. pet)","48 Oathplate shards (drops)","Any DT2 boss unique (excl. teleport tab, quartz, gold ring and awakener's orbs)","Any Yama unique (excl. shards, incl. pet)","Any GWD boss unique (excl. Godsword shards, incl. pet)"],"medium":["Any ToA purple (incl. pet)","Any CoX purple (incl. pet)","Any Wildy boss rings (Tyrannical, Ring of the gods, Treasonous)","Venator shard","KQ unique (incl. head, dragon chain, dragon pick, dragon 2h, jar and pet)","Dragon pickaxe","20 LMS pts","Zalcano tertiary (incl. pet)"]},"mech":[]},{"n":10,"boss":true,"unlock":600,"tiles":{"elite":["Any TFA purple (excl. folio)","Any Voidwaker piece"],"hard":["Any ToB purple (incl. pet)","48 Oathplate shards (drops)","Any DT2 boss unique (excl. teleport tab, quartz, gold ring and awakener's orbs)","Any Maggot King pre-roll (incl. pet)"],"medium":["Any ToA purple (incl. pet)","Any CoX purple (incl. pet)","Any DKS ring","Venator shard","Any Kraken unique (trident, tentacle, pet or jar) -or- Any Thermonuclear pre-roll (incl. pet and jar)"],"easy":["Any Barrows unique","Black mask"]},"mech":["At 50% HP, the Warden's armour absorbs all damage. The team must complete one Hard or Elite PvM tile to break the armour before damage resumes."],"name":"The Barrows Warden","hp":300,"reward":"A choice of 3 buffs","options":[{"name":"Skilled Ascent","text":"Hard and Elite normal-floor tiles grant +2 AP"},{"name":"Steady Ascent","text":"Easy and Medium normal-floor tiles grant +3 AP"},{"name":"Efficient Climbing","text":"Gain +7 AP for every 5 normal-floor tiles completed"}]},{"n":11,"boss":false,"unlock":null,"tiles":{"elite":["Inferno cape","Vorkath tertiary (any 1/1000+, including pet and jar)","Any Voidwaker piece","Quiver"],"hard":["Any ToB purple (incl. pet)","48 Oathplate shards (drops)","Any Yama unique (excl. shards, incl. pet)","Any DT2 boss unique (excl. teleport tab, quartz, gold ring and awakener's orbs)"],"medium":["Any CoX purple (incl. pet)","Any ToA purple (incl. pet)","Any Tormented Demon unique","Any Araxxor unique (incl. pet and jar) -or- Any Alchemical Hydra Unique (excl. thrownaxe and knives, incl. pet and jar)","Any Gauntlet unique (excl. cape and crystal shards)"],"easy":["Gain 100k Woodcutting XP","Sarachnis cudgel"]},"mech":[]},{"n":12,"boss":false,"unlock":700,"tiles":{"elite":["Any Doom unique (incl. pet)","Any TFA purple (excl. folio)","Inferno cape","Vorkath tertiary (any 1/1000+, including pet and jar)"],"hard":["Any ToB purple (incl. pet)","48 Oathplate shards (drops)","Any Yama unique (excl. shards, incl. pet)","Any DT2 boss unique (excl. teleport tab, quartz, gold ring and awakener's orbs)","Any GWD boss unique (excl. Godsword shards, incl. pet)"],"medium":["Any CoX purple (incl. pet)","Any ToA purple (incl. pet)","Zulrah unique (any, incl. pet and jar)","Zalcano tertiary (incl. pet)","Venator shard","Any Elemental staff crown"],"easy":["KBD Heads"]},"mech":[]},{"n":13,"boss":false,"unlock":805,"tiles":{"elite":["Any Colosseum unique (excl. quiver)","Quiver","Vorkath tertiary (any 1/1000+, including pet and jar)","Any Voidwaker piece"],"hard":["Any ToB purple (incl. pet)","48 Oathplate shards (drops)","Any GWD boss unique (excl. Godsword shards, incl. pet)","Any DT2 boss unique (excl. teleport tab, quartz, gold ring and awakener's orbs)","Any Maggot King pre-roll (incl. pet)"],"medium":["Any ToA purple (incl. pet)","Any CoX purple (incl. pet)","Any DKS ring","KQ unique (incl. head, dragon chain, dragon pick, dragon 2h, jar and pet)","Dragon pickaxe","20 LMS pts","Any Tormented Demon unique"]},"mech":[]},{"n":14,"boss":false,"unlock":915,"tiles":{"elite":["Any Voidwaker piece","Inferno cape","Quiver","Any TFA purple (excl. folio)"],"hard":["Any ToB purple (incl. pet)","48 Oathplate shards (drops)","Any GWD boss unique (excl. Godsword shards, incl. pet)","Any DT2 boss unique (excl. teleport tab, quartz, gold ring and awakener's orbs)","Any Yama unique (excl. shards, incl. pet)","Any Nightmare unique (incl. pet and jar)"],"medium":["Any CoX purple (incl. pet)","Any ToA purple (incl. pet)","Zalcano tertiary (incl. pet)","Any DKS ring","Any Wildy boss rings (Tyrannical, Ring of the gods, Treasonous)","Any Elemental staff crown"]},"mech":[]},{"n":15,"boss":true,"unlock":1035,"tiles":{"elite":["Any TFA purple (excl. folio)","Any Doom unique (incl. pet)","Any Colosseum unique (excl. quiver)"],"hard":["Any ToB purple (incl. pet)","Any Yama unique (excl. shards, incl. pet)","Any Nightmare unique (incl. pet and jar)","Any GWD boss unique (excl. Godsword shards, incl. pet)"],"medium":["Any ToA purple (incl. pet)","Any CoX purple (incl. pet)","Any Tormented Demon unique","Any Araxxor unique (incl. pet and jar) -or- Any Alchemical Hydra Unique (excl. thrownaxe and knives, incl. pet and jar)"],"easy":["Any Moons unique (excl. Atlatl dart)"]},"mech":["The Sentinel begins the fight protected by four seals, representing Chambers of Xeric (CoX), Theatre of Blood (ToB), Tombs of Amascut (ToA) and The Fractured Archives (TFA). Each intact seal reduces the damage the Sentinel receives by 10%. The first tile completed from each raid breaks its corresponding seal, permanently removing that seal's damage reduction for the remainder of the fight."],"name":"The Abyssal Sentinel","hp":400,"reward":"A choice of 3 buffs","options":[{"name":"Conqueror's Resolve","text":"Completing all available tiles of one difficulty on a normal floor grants +6 AP."},{"name":"Versatile Ascent","text":"The first tile completed from each difficulty tier on every normal floor grants +3 additional AP."},{"name":"Arcane Reservoir","text":"Gain +40 AP after defeating each subsequent boss."}]},{"n":16,"boss":false,"unlock":null,"tiles":{"elite":["Any Doom unique (incl. pet)","Vorkath tertiary (any 1/1000+, including pet and jar)","Any Colosseum unique (excl. quiver)","Any TFA purple (excl. folio)"],"hard":["Any ToB purple (incl. pet)","48 Oathplate shards (drops)","Any Maggot King pre-roll (incl. pet)","Any Nightmare unique (incl. pet and jar)","Any DT2 boss unique (excl. teleport tab, quartz, gold ring and awakener's orbs)"],"medium":["Any ToA purple (incl. pet)","Any CoX purple (incl. pet)","Any Araxxor unique (incl. pet and jar) -or- Any Alchemical Hydra Unique (excl. thrownaxe and knives, incl. pet and jar)","Any Kraken unique (trident, tentacle, pet or jar) -or- Any Thermonuclear pre-roll (incl. pet and jar)","Zenyte shard"],"easy":["Black mask"]},"mech":[]},{"n":17,"boss":false,"unlock":1155,"tiles":{"elite":["Any Voidwaker piece","Vorkath tertiary (any 1/1000+, including pet and jar)","Any Colosseum unique (excl. quiver)","Any Doom unique (incl. pet)"],"hard":["Any ToB purple (incl. pet)","48 Oathplate shards (drops)","Any Yama unique (excl. shards, incl. pet)","Any GWD boss unique (excl. Godsword shards, incl. pet)","Any Nightmare unique (incl. pet and jar)"],"medium":["Any CoX purple (incl. pet)","Any ToA purple (incl. pet)","Unsired -or- Grotesque Guardians unique (incl. pet and jar)","20 LMS pts","Dragon pickaxe","KQ unique (incl. head, dragon chain, dragon pick, dragon 2h, jar and pet)","Pharaoh's sceptre"]},"mech":[]},{"n":18,"boss":false,"unlock":1285,"tiles":{"elite":["Inferno cape","Any TFA purple (excl. folio)","Any Doom unique (incl. pet)","Any ToB ornament kit -or- sanguine dust"],"hard":["Any ToB purple (incl. pet)","48 Oathplate shards (drops)","Any Maggot King pre-roll (incl. pet)","Any Yama unique (excl. shards, incl. pet)","Any GWD boss unique (excl. Godsword shards, incl. pet)","Any DT2 boss unique (excl. teleport tab, quartz, gold ring and awakener's orbs)"],"medium":["Any CoX purple (incl. pet)","Any ToA purple (incl. pet)","Any Tormented Demon unique","Zulrah unique (any, incl. pet and jar)","Venator shard","Any Elemental staff crown"]},"mech":[]},{"n":19,"boss":false,"unlock":1420,"tiles":{"elite":["Quiver","Any Voidwaker piece","Any Colosseum unique (excl. quiver)","Vorkath tertiary (any 1/1000+, including pet and jar)"],"hard":["Any ToB purple (incl. pet)","48 Oathplate shards (drops)","Any DT2 boss unique (excl. teleport tab, quartz, gold ring and awakener's orbs)","Any Maggot King pre-roll (incl. pet)","Any Nightmare unique (incl. pet and jar)","Any GWD boss unique (excl. Godsword shards, incl. pet)"],"medium":["Any ToA purple (incl. pet)","Any CoX purple (incl. pet)","Zenyte shard","Any Araxxor unique (incl. pet and jar) -or- Any Alchemical Hydra Unique (excl. thrownaxe and knives, incl. pet and jar)","Any Wildy boss rings (Tyrannical, Ring of the gods, Treasonous)","Any DKS ring"]},"mech":[]},{"n":20,"boss":true,"unlock":1560,"tiles":{"elite":["Any TFA purple (excl. folio)","Inferno cape","Vorkath tertiary (any 1/1000+, including pet and jar)"],"hard":["Any ToB purple (incl. pet)","48 Oathplate shards (drops)","Any DT2 boss unique (excl. teleport tab, quartz, gold ring and awakener's orbs)","Any GWD boss unique (excl. Godsword shards, incl. pet)","Any Cerberus unique"],"medium":["Any CoX purple (incl. pet)","Any ToA purple (incl. pet)","Any Gauntlet unique (excl. cape and crystal shards)"],"easy":["Fire Cape"]},"mech":["At each 25% HP, the Colossus overheats. Its next three eligible submissions each deal 5 less damage, to a minimum of 1."],"name":"The Infernal Colossus","hp":600,"reward":"A choice of 3 buffs","options":[{"name":"Skilled Assault","text":"Hard and Elite PvM tiles deal +2 bonus boss damage."},{"name":"Steady Assault","text":"Easy and Medium PvM tiles deal +5 bonus boss damage."},{"name":"Guardian's Mark","text":"The first PvM submission against each boss deals +70 damage."}]},{"n":21,"boss":false,"unlock":null,"tiles":{"elite":["Any TFA purple (excl. folio)","Inferno cape","Quiver","Any ToB ornament kit -or- sanguine dust","Vorkath tertiary (any 1/1000+, including pet and jar)"],"hard":["Any ToB purple (incl. pet)","48 Oathplate shards (drops)","Any DT2 boss unique (excl. teleport tab, quartz, gold ring and awakener's orbs)","Any Yama unique (excl. shards, incl. pet)","Any Maggot King pre-roll (incl. pet)","Any Nightmare unique (incl. pet and jar)"],"medium":["Any CoX purple (incl. pet)","Any ToA purple (incl. pet)","Zalcano tertiary (incl. pet)","Any Kraken unique (trident, tentacle, pet or jar) -or- Any Thermonuclear pre-roll (incl. pet and jar)"]},"mech":[]},{"n":22,"boss":false,"unlock":1705,"tiles":{"elite":["Vorkath tertiary (any 1/1000+, including pet and jar)","Any Doom unique (incl. pet)","Any Voidwaker piece","Quiver","Any TFA purple (excl. folio)"],"hard":["Any ToB purple (incl. pet)","48 Oathplate shards (drops)","Any Cerberus unique","Any DT2 boss unique (excl. teleport tab, quartz, gold ring and awakener's orbs)","Any GWD boss unique (excl. Godsword shards, incl. pet)","Any Yama unique (excl. shards, incl. pet)"],"medium":["Any CoX purple (incl. pet)","Any ToA purple (incl. pet)","Any Tormented Demon unique","Zulrah unique (any, incl. pet and jar)","Venator shard"]},"mech":[]},{"n":23,"boss":false,"unlock":1855,"tiles":{"elite":["Any Corp sigil","Twisted ancestral colour kit -or- Metamorphic dust","Any ToB ornament kit -or- sanguine dust","Vorkath tertiary (any 1/1000+, including pet and jar)","Any TFA purple (excl. folio)"],"hard":["Any ToB purple (incl. pet)","48 Oathplate shards (drops)","Any Maggot King pre-roll (incl. pet)","Any Nightmare unique (incl. pet and jar)","Any Cerberus unique","Broken dragon hook -or- Dragon cannon barrel"],"medium":["Any CoX purple (incl. pet)","Any ToA purple (incl. pet)","Any Araxxor unique (incl. pet and jar) -or- Any Alchemical Hydra Unique (excl. thrownaxe and knives, incl. pet and jar)","Any Kraken unique (trident, tentacle, pet or jar) -or- Any Thermonuclear pre-roll (incl. pet and jar)","Any Wildy boss rings (Tyrannical, Ring of the gods, Treasonous)"]},"mech":[]},{"n":24,"boss":false,"unlock":2010,"tiles":{"elite":["Inferno cape","Any Colosseum unique (excl. quiver)","Any Doom unique (incl. pet)","Any TFA purple (excl. folio)","Vorkath tertiary (any 1/1000+, including pet and jar)"],"hard":["Any ToB purple (incl. pet)","48 Oathplate shards (drops)","Any GWD boss unique (excl. Godsword shards, incl. pet)","Any DT2 boss unique (excl. teleport tab, quartz, gold ring and awakener's orbs)","Any Yama unique (excl. shards, incl. pet)","Any Nightmare unique (incl. pet and jar)"],"medium":["Any CoX purple (incl. pet)","Any ToA purple (incl. pet)","Zalcano tertiary (incl. pet)","Any Gauntlet unique (excl. cape and crystal shards)","Any Elemental staff crown"]},"mech":[]},{"n":25,"boss":true,"unlock":2175,"tiles":{"elite":["Any TFA purple (excl. folio)","Any Doom unique (incl. pet)","Quiver","Any Voidwaker piece"],"hard":["Any ToB purple (incl. pet)","Any Yama unique (excl. shards, incl. pet)","Any Nightmare unique (incl. pet and jar)","Any DT2 boss unique (excl. teleport tab, quartz, gold ring and awakener's orbs)","Any Maggot King pre-roll (incl. pet)"],"medium":["Any CoX purple (incl. pet)","Any ToA purple (incl. pet)","Zenyte shard"],"easy":["Any Barrows unique"]},"mech":["At the start of the fight and again at 50% HP, the Tyrant becomes invulnerable. The team must submit one Easy, one Medium and one Hard-or-Elite PvM completion in any order."],"name":"The Dragonkin Tyrant","hp":800,"reward":"A choice of 3 buffs","options":[{"name":"Dragonkin's Wrath","text":"Every 15th eligible PvM submission deals +45 bonus damage (max 90 bonus dmg)"},{"name":"Shattered Defences","text":"The first completed tile from each difficulty tier deals +30 bonus damage."},{"name":"Executioner's Mark","text":"When the boss falls below 50% HP, the next three submissions deal +30 bonus damage each."}]},{"n":26,"boss":false,"unlock":null,"tiles":{"elite":["Vorkath tertiary (any 1/1000+, including pet and jar)","Quiver","Any Voidwaker piece","Inferno cape","Any Doom unique (incl. pet)"],"hard":["Any ToB purple (incl. pet)","48 Oathplate shards (drops)","Any Maggot King pre-roll (incl. pet)","Any Cerberus unique","Broken dragon hook -or- Dragon cannon barrel","Any DT2 boss unique (excl. teleport tab, quartz, gold ring and awakener's orbs)"],"medium":["Any CoX purple (incl. pet)","Any ToA purple (incl. pet)","Any DKS ring","Dragon pickaxe","20 LMS pts"]},"mech":[]},{"n":27,"boss":false,"unlock":2340,"tiles":{"elite":["Any Corp sigil","Any ToB ornament kit -or- sanguine dust","Twisted ancestral colour kit -or- Metamorphic dust","Inferno cape","Any Colosseum unique (excl. quiver)"],"hard":["Any ToB purple (incl. pet)","48 Oathplate shards (drops)","Any Tempoross unique DROP (1/1600+) (incl. pet) -or- 6 000 Spirit flakes","Any Yama unique (excl. shards, incl. pet)","Any DT2 boss unique (excl. teleport tab, quartz, gold ring and awakener's orbs)","Any GWD boss unique (excl. Godsword shards, incl. pet)"],"medium":["Any ToA purple (incl. pet)","Any CoX purple (incl. pet)","Any Tormented Demon unique","Any Araxxor unique (incl. pet and jar) -or- Any Alchemical Hydra Unique (excl. thrownaxe and knives, incl. pet and jar)","Zenyte shard"]},"mech":[]},{"n":28,"boss":false,"unlock":2515,"tiles":{"elite":["Any Colosseum unique (excl. quiver)","Vorkath tertiary (any 1/1000+, including pet and jar)","Any Doom unique (incl. pet)","Any Corp sigil","Any Voidwaker piece"],"hard":["Any ToB purple (incl. pet)","48 Oathplate shards (drops)","Any Maggot King pre-roll (incl. pet)","Any Nightmare unique (incl. pet and jar)","Any Cerberus unique","Broken dragon hook -or- Dragon cannon barrel"],"medium":["Any ToA purple (incl. pet)","Any CoX purple (incl. pet)","Zalcano tertiary (incl. pet)","Any Gauntlet unique (excl. cape and crystal shards)","Any DKS ring"]},"mech":[]},{"n":29,"boss":false,"unlock":2695,"tiles":{"elite":["Quiver","Any TFA purple (excl. folio)","Inferno cape","Any Voidwaker piece","Twisted ancestral colour kit -or- Metamorphic dust"],"hard":["Any ToB purple (incl. pet)","48 Oathplate shards (drops)","Any Tempoross unique DROP (1/1600+) (incl. pet) -or- 6 000 Spirit flakes","Any GWD boss unique (excl. Godsword shards, incl. pet)","Any Yama unique (excl. shards, incl. pet)","Any DT2 boss unique (excl. teleport tab, quartz, gold ring and awakener's orbs)","Any Maggot King pre-roll (incl. pet)"],"medium":["Any ToA purple (incl. pet)","Any CoX purple (incl. pet)","Zulrah unique (any, incl. pet and jar)","Any Kraken unique (trident, tentacle, pet or jar) -or- Any Thermonuclear pre-roll (incl. pet and jar)"]},"mech":[]},{"n":30,"boss":true,"unlock":2880,"tiles":{"elite":["Any TFA purple (excl. folio)","Any Doom unique (incl. pet)","Any Corp sigil","Vorkath tertiary (any 1/1000+, including pet and jar)","Twisted ancestral colour kit -or- Metamorphic dust"],"hard":["Any ToB purple (incl. pet)","Any Yama unique (excl. shards, incl. pet)","Any DT2 boss unique (excl. teleport tab, quartz, gold ring and awakener's orbs)","Any GWD boss unique (excl. Godsword shards, incl. pet)","Any Cerberus unique"],"medium":["Any CoX purple (incl. pet)","Any ToA purple (incl. pet)","Any Gauntlet unique (excl. cape and crystal shards)"]},"mech":["At 33% HP, the Ascended One enters its final phase. The team cannot use the same exact tile on two consecutive submissions. One-time bonus damage is disabled and all bonus AP buffs are disabled."],"name":"The Ascended One","hp":1000,"reward":"Ascension"}];
+const F = n => FLOORS[n - 1];
+const TIERS = ['elite', 'hard', 'medium', 'easy'];
+const TV = {easy: 5, medium: 10, hard: 15, elite: 20};
+// Abyssal Sentinel damage by number of seals still intact (index 0-4), from the board.
+const SEAL = {elite: [20, 18, 16, 14, 12], hard: [15, 14, 12, 11, 9], medium: [10, 9, 8, 7, 6], easy: [5, 4, 4, 3, 3]};
+const RAIDS = ['CoX', 'ToB', 'ToA', 'TFA'];
+const COLORS = ['#ef6a6a', '#4aa8ff', '#6fbf73', '#d9b45a', '#b889f0', '#f08a4b', '#4fc4b8', '#e07aa8'];
+const VIEWS = [['tower', 'Tower'], ['teams', 'Teams'], ['log', 'Drop log'], ['rules', 'How it works'], ['admin', 'Admin']];
+const TEAM_KEY = 'tower-of-ascension-team';
+
+const S = {teams: [], subs: [], settings: {}, admin: null, configured: true, ehb: null, audit: null, canWrite: false, loaded: false, stale: false, error: '',
+  view: 'tower', floorSel: null, teamSel: null, tileSel: null, draft: {}, confirm: null, busy: false, copyText: ''};
+let dirty = false;
+try { S.teamSel = localStorage.getItem(TEAM_KEY); } catch (e) {}
+function pickTeam(id) { S.teamSel = id; try { localStorage.setItem(TEAM_KEY, id); } catch (e) {} }
+const norm = s => String(s || '').toLowerCase().replace(/[\s_-]+/g, ' ').trim();
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+const fmt = n => Number(n).toLocaleString('en-US');
+const when = ts => new Date(ts).toLocaleString(undefined, {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'});
+const tcolor = t => COLORS[(t.color ?? 0) % COLORS.length];
+
+/* ---------- scoring ---------- */
+function compute(team, allSubs) {
+  const subs = allSubs.filter(s => s.team === team.id).sort((a, b) => a.ts - b.ts);
+  let floor = 1, ap = 0, finishedAt = null;
+  const dmg = {}, done = {};
+  for (const s of subs) {
+    const v = Number(s.value) || 0;
+    if (s.kind === 'adj') ap += v;
+    else {
+      if (F(s.floor).boss) dmg[s.floor] = (dmg[s.floor] || 0) + v; else ap += v;
+      (done[s.floor] = done[s.floor] || {})[s.tier + ':' + s.tile] = (done[s.floor][s.tier + ':' + s.tile] || 0) + 1;
+    }
+    while (floor <= 30) {
+      const f = F(floor);
+      if (f.boss) { if ((dmg[floor] || 0) >= f.hp) { floor++; if (floor > 30) finishedAt = s.ts; } else break; }
+      else if (ap >= F(floor + 1).unlock) floor++; else break;
+    }
+  }
+  const finished = floor > 30; floor = Math.min(floor, 30);
+  const f = F(floor); let pct, need, label;
+  if (finished) { pct = 1; need = 0; label = 'Ascended'; }
+  else if (f.boss) { const d = dmg[floor] || 0; need = f.hp - d; pct = d / f.hp; label = `${fmt(need)} HP left on ${f.name}`; }
+  else {
+    const target = F(floor + 1).unlock, base = f.unlock ?? F(floor - 1).unlock;
+    need = target - ap; pct = Math.max(0, (ap - base) / (target - base));
+    label = `${fmt(need)} AP to Floor ${floor + 1}`;
+  }
+  return {team, subs, floor, finished, finishedAt, ap, dmg, done: done, pct: Math.min(1, pct), need, label};
+}
+function standings() {
+  return S.teams.map(t => compute(t, S.subs)).sort((a, b) =>
+    (b.finished - a.finished) || (a.finished ? a.finishedAt - b.finishedAt : (b.floor - a.floor) || (b.pct - a.pct)));
+}
+function sealsBroken(st) {
+  return RAIDS.filter(r => st.subs.some(s => s.floor === 15 && s.kind !== 'adj' && String(s.tileName).includes(r)));
+}
+function suggest(st, tier) {
+  if (st.floor === 15) return SEAL[tier][4 - sealsBroken(st).length];
+  return TV[tier];
+}
+
+/* ---------- server ---------- */
+async function api(path, body) {
+  const r = await fetch(path, body ? {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify(body)} : {cache: 'no-store'});
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw Object.assign(new Error(j.error || 'Request failed.'), {status: r.status});
+  return j;
+}
+function apply(st) {
+  const before = S.settings.womId;
+  S.teams = st.teams; S.subs = st.subs; S.settings = st.settings || {}; S.admin = st.admin; S.configured = st.configured;
+  S.canWrite = !!st.admin; S.loaded = true; S.stale = false;
+  if (S.settings.womId !== before) loadEhb();
+}
+async function load() {
+  try { apply(await api('/api/state')); } catch (e) { S.stale = true; }
+  render();
+}
+async function loadEhb() {
+  if (!S.settings.womId) { S.ehb = null; return; }
+  try { S.ehb = await api('/api/ehb?id=' + encodeURIComponent(S.settings.womId)); } catch (e) { S.ehb = {players: [], error: 'EHB could not be loaded from Wise Old Man.'}; }
+  render();
+}
+async function loadAudit() {
+  if (!S.admin) return;
+  try { S.audit = (await api('/api/audit')).rows; } catch (e) { S.audit = null; }
+  render();
+}
+async function write(body) {
+  if (S.busy) return false;
+  S.busy = true; S.error = '';
+  try { apply(await api('/api/write', body)); return true; }
+  catch (e) {
+    if (e.status === 401) { S.admin = null; S.canWrite = false; S.error = 'Your admin session has ended. Sign in again on the Admin tab.'; }
+    else S.error = e.status ? e.message : 'That change could not be saved. Check your connection and try again.';
+    return false;
+  } finally { S.busy = false; render(true); }
+}
+const Store = {
+  addTeam: d => write({op: 'addTeam', ...d}),
+  patchTeam: (id, patch) => write({op: 'patchTeam', id, patch}),
+  delTeam: id => write({op: 'delTeam', id}),
+  addSub: sub => write({op: 'addSub', sub}),
+  delSub: id => write({op: 'delSub', id}),
+};
+// EHB gained for one team: players matched by RSN to the team's members, else by the WOM team name.
+function ehbFor(team) {
+  const out = {total: 0, by: {}};
+  if (!S.ehb || !S.ehb.players) return out;
+  const members = new Set((team.members || []).map(norm));
+  const claimed = n => S.teams.some(t => (t.members || []).some(m => norm(m) === n));
+  for (const p of S.ehb.players) {
+    const n = norm(p.name);
+    if (members.has(n) || (!claimed(n) && p.team && norm(p.team) === norm(team.name))) { out.total += p.gained; out.by[n] = p; }
+  }
+  return out;
+}
+async function init() {
+  route(); render(true);
+  await load();
+  if (S.view === 'admin') loadAudit();
+  setInterval(() => { if (!document.hidden && !S.busy) load(); }, 15000);
+  setInterval(() => { if (!document.hidden) loadEhb(); }, 600000);
+}
+
+/* ---------- rendering ---------- */
+function route() {
+  const h = location.hash.slice(1);
+  S.view = VIEWS.some(v => v[0] === h) ? h : 'tower';
+}
+function tilesHtml(f, opts = {}) {
+  return TIERS.filter(t => f.tiles[t]).map(t => {
+    const val = f.boss ? (f.n === 15 ? 'dmg varies' : '−' + TV[t] + ' HP') : '+' + TV[t] + ' AP';
+    return `<div class="tier t-${t}"><h4>${t} <span class="muted">${val}</span></h4><div class="tiles">` +
+      f.tiles[t].map((name, i) => {
+        const key = t + ':' + i, n = opts.done ? (opts.done[key] || 0) : 0;
+        const done = n && !f.boss, sel = opts.sel === key;
+        const count = f.boss && n ? `<b>×${n}</b>` : '';
+        if (opts.pick && !done) return `<button class="tile${sel ? ' sel' : ''}" data-act="pick" data-key="${key}">${esc(name)}${count}</button>`;
+        return `<span class="tile${done ? ' done' : ''}">${esc(name)}${count}</span>`;
+      }).join('') + '</div></div>';
+  }).join('');
+}
+function floorInfo(f, chosen) {
+  let h = '';
+  for (const m of f.mech) h += `<p class="mech">${esc(m)}</p>`;
+  if (f.options) h += `<h3>Reward for the kill: pick one buff</h3><div class="opts">` +
+    f.options.map((o, i) => `<div class="opt${chosen === i ? ' on' : ''}"><strong>${esc(o.name)}</strong>${esc(o.text)}</div>`).join('') + '</div>';
+  else if (f.reward) h += `<p><span class="muted">Reward:</span> ${esc(f.reward)}</p>`;
+  return h;
+}
+function unlockText(f) {
+  if (f.n === 1) return 'Start here';
+  return f.unlock == null ? `Opens when ${F(f.n - 1).name} dies` : `${fmt(f.unlock)} total AP to unlock`;
+}
+function standingsHtml(st) {
+  if (!S.loaded) return `<p class="muted">Loading event data…</p>`;
+  if (!st.length) return `<div class="card"><p>No teams yet. ${S.canWrite ? 'Add them on the <a href="#teams" style="color:var(--accent)">Teams</a> tab.' : 'The event admin has not added teams.'}</p></div>`;
+  return `<div class="standings">` + st.map((s, i) => `
+    <button class="stand" style="--c:${tcolor(s.team)}" data-act="team" data-id="${s.team.id}">
+      <span class="name"><span>${esc(s.team.name)}</span><span class="muted">#${i + 1}</span></span>
+      <span class="big">${s.finished ? 'Ascended' : 'Floor ' + s.floor}</span>
+      <span class="bar${!s.finished && F(s.floor).boss ? ' hp' : ''}"><i style="width:${Math.round(s.pct * 100)}%"></i></span>
+      <span class="muted num">${fmt(s.ap)} AP · ${esc(s.label)}${S.settings.womId && S.ehb ? ' · ' + ehbFor(s.team).total.toFixed(1) + ' EHB' : ''}</span>
+    </button>`).join('') + '</div>';
+}
+function viewTower(st) {
+  const me = st.find(s => s.team.id === S.teamSel) || st[0], sel = S.floorSel || (me ? me.floor : 1), f = F(sel);
+  let rows = '';
+  for (let n = 30; n >= 1; n--) {
+    const x = F(n), here = st.filter(s => !s.finished && s.floor === n || s.finished && n === 30);
+    rows += `<button class="fl${x.boss ? ' boss' : ''}${me && !me.finished && me.floor === n ? ' cur' : ''}" data-act="floor" data-n="${n}" aria-pressed="${n === sel}">
+      <span class="n">${n}</span>
+      <span class="lbl">${x.boss ? `<span>${esc(x.name)}</span><small class="num">${fmt(x.hp)} HP · needs ${fmt(x.unlock)} AP</small>`
+        : `<small class="num">${x.n === 1 ? 'Start' : x.unlock == null ? 'Opens on boss kill' : fmt(x.unlock) + ' AP'}</small>`}</span>
+      <span class="dots">${here.map(s => `<span class="dot" style="--c:${tcolor(s.team)}" title="${esc(s.team.name)}">${esc(s.team.name.slice(0, 1).toUpperCase())}</span>`).join('')}</span>
+    </button>`;
+  }
+  const pills = st.length > 1 ? `<div class="pills"><span class="muted">Show the tower for</span>` + st.map(s => `<button class="pill" style="--c:${tcolor(s.team)}" data-act="mine" data-id="${s.team.id}" aria-pressed="${s.team.id === me.team.id}">${esc(s.team.name)}</button>`).join('') + '</div>' : '';
+  const where = !me ? '' : me.finished || f.n < me.floor ? `<p class="here">${esc(me.team.name)} cleared this floor.</p>`
+    : f.n === me.floor ? `<p class="here on">${esc(me.team.name)} is here · ${esc(me.label)}</p>` : `<p class="here">${esc(me.team.name)} has not reached this floor yet.</p>`;
+  return standingsHtml(st) + pills + `<div class="towergrid">
+    <div class="tower" aria-label="Floors, top to bottom">${rows}</div>
+    <section class="card detail" id="detail">
+      <div><h2>Floor ${f.n}${f.boss ? ' · ' + esc(f.name) : ''}</h2>
+      <p class="muted num">${f.boss ? fmt(f.hp) + ' HP · ' : ''}${unlockText(f)}${f.boss ? ' · tiles repeat without limit' : ' · each tile once'}</p></div>
+      ${where}${floorInfo(f, me && me.team.buffs ? me.team.buffs[f.n] : undefined)}${tilesHtml(f, {done: me ? me.done[f.n] : null})}
+    </section></div>`;
+}
+function dval(k, fallback = '') { return esc(S.draft[k] ?? fallback); }
+function viewTeams(st) {
+  if (!S.loaded) return `<p class="muted">Loading event data…</p>`;
+  const cur = st.find(s => s.team.id === S.teamSel) || st[0];
+  let h = `<div class="pills">` + st.map(s => `<button class="pill" style="--c:${tcolor(s.team)}" data-act="team" data-id="${s.team.id}" aria-pressed="${cur && s.team.id === cur.team.id}">${esc(s.team.name)}</button>`).join('');
+  if (S.canWrite) h += `<span class="row"><input id="new-team" data-draft="newTeam" value="${dval('newTeam')}" placeholder="New team name" aria-label="New team name"><button class="btn" data-act="add-team">Add team</button></span>`;
+  h += '</div>';
+  if (!cur) return h + `<div class="card"><p>No teams yet.${S.canWrite ? ' Add the first one above.' : ''}</p></div>`;
+  const t = cur.team, f = F(cur.floor), w = S.canWrite, hasEhb = !!(S.settings.womId && S.ehb), eh = ehbFor(t);
+  // status + current floor
+  h += `<section class="card" style="border-top:3px solid ${tcolor(t)}">
+    <div class="row" style="justify-content:space-between"><div><h2>${esc(t.name)} · ${cur.finished ? 'Ascended' : 'Floor ' + cur.floor + (f.boss ? ' · ' + esc(f.name) : '')}</h2>
+      <p class="muted num">${fmt(cur.ap)} AP total · ${esc(cur.label)}${hasEhb ? ' · ' + eh.total.toFixed(1) + ' EHB gained' : ''}</p></div></div>
+    <div class="bar${!cur.finished && f.boss ? ' hp' : ''}" style="--c:${tcolor(t)}"><i style="width:${Math.round(cur.pct * 100)}%"></i></div>`;
+  if (!cur.finished) {
+    h += floorInfo(f, t.buffs ? t.buffs[f.n] : undefined);
+    if (f.n === 15) { const b = sealsBroken(cur); h += `<p class="num">Seals broken: ${b.length ? b.join(', ') : 'none'} (${4 - b.length} intact)</p>`; }
+    h += `<h3>${w ? 'Tap a tile to log it' : 'Tiles on this floor'}</h3>` + tilesHtml(f, {done: cur.done[cur.floor], pick: w, sel: S.tileSel});
+    if (w && S.tileSel) {
+      const [tier, idx] = S.tileSel.split(':'), name = f.tiles[tier] && f.tiles[tier][idx];
+      if (name) {
+        const buffs = Object.entries(t.buffs || {}).filter(([, i]) => i != null && i !== '').map(([n, i]) => F(+n).options[i]);
+        h += `<div class="card" style="background:var(--raised)">
+          <p><strong>${esc(name)}</strong> <span class="muted">${tier}</span></p>
+          ${buffs.length ? `<p class="muted" style="font-size:15px">Active buffs, add them to the number yourself: ${buffs.map(b => `<strong>${esc(b.name)}</strong> (${esc(b.text)})`).join(' · ')}</p>` : ''}
+          <div class="row">
+            <label class="grow">Player<input id="sub-player" list="members" data-draft="player" value="${dval('player')}" placeholder="RSN"></label>
+            <label class="grow">Drop or note<input id="sub-note" data-draft="note" value="${dval('note')}" placeholder="e.g. Tumeken's shadow"></label>
+            <label style="width:110px">${f.boss ? 'Damage' : 'AP'}<input id="sub-value" type="number" data-draft="value" value="${dval('value', suggest(cur, tier))}"></label>
+            <button class="btn primary" data-act="log" ${S.busy ? 'disabled' : ''}>Log it</button>
+          </div>
+          <datalist id="members">${(t.members || []).map(m => `<option value="${esc(m)}">`).join('')}</datalist></div>`;
+      }
+    }
+  }
+  h += '</section><div class="cols">';
+  // members + contributions
+  const rowsBy = {}, row = name => rowsBy[norm(name)] = rowsBy[norm(name)] || {name, n: 0, v: 0, ehb: null, member: false};
+  for (const m of t.members || []) row(m).member = true;
+  for (const s of cur.subs) if (s.kind !== 'adj') { const r = row(s.player || 'Unknown'); r.n++; r.v += Number(s.value) || 0; }
+  for (const p of Object.values(eh.by)) row(p.name).ehb = p.gained;
+  const list = Object.values(rowsBy).sort((a, b) => (b.v - a.v) || ((b.ehb || 0) - (a.ehb || 0)));
+  h += `<section class="card"><h3>Members and contributions</h3><div class="tablewrap"><table><thead><tr><th>Player</th><th class="r">Tiles</th><th class="r">AP + damage</th>${hasEhb ? '<th class="r">EHB gained</th>' : ''}${w ? '<th></th>' : ''}</tr></thead><tbody>` +
+    (list.length ? list.map(x => `<tr><td>${esc(x.name)}</td><td class="r num">${x.n}</td><td class="r num">${fmt(x.v)}</td>${hasEhb ? `<td class="r num">${x.ehb == null ? '<span class="muted">not tracked</span>' : x.ehb.toFixed(1)}</td>` : ''}${w ? `<td class="r">${x.member ? `<button class="btn small" data-act="rm-member" data-name="${esc(x.name)}" aria-label="Remove ${esc(x.name)}">Remove</button>` : ''}</td>` : ''}</tr>`).join('')
+      : `<tr><td colspan="5" class="muted">No members yet.</td></tr>`) + '</tbody></table></div>';
+  if (hasEhb) h += `<p class="muted" style="font-size:14px">${S.ehb.error ? esc(S.ehb.error) : 'EHB comes from Wise Old Man and counts from the start of its competition. It moves when a player logs out and Wise Old Man refreshes them.'}</p>`;
+  if (w) h += `<div class="row"><input id="new-member" class="grow" data-draft="newMember" value="${dval('newMember')}" placeholder="Add RSN" aria-label="Add member"><button class="btn" data-act="add-member">Add member</button></div>`;
+  h += '</section>';
+  // buffs + bonus
+  h += `<section class="card"><h3>Buffs chosen</h3>`;
+  for (const n of [5, 10, 15, 20, 25]) {
+    const b = F(n), killed = cur.floor > n || cur.finished, v = t.buffs && t.buffs[n] != null ? t.buffs[n] : '';
+    h += `<label>Floor ${n} · ${esc(b.name)}${killed ? '' : ' (not defeated yet)'}
+      <select id="buff-${n}" data-act-change="buff" data-n="${n}" ${w && killed ? '' : 'disabled'}>
+        <option value="">${killed ? 'Not chosen' : 'Locked'}</option>${b.options.map((o, i) => `<option value="${i}" ${String(v) === String(i) ? 'selected' : ''}>${esc(o.name)}</option>`).join('')}</select></label>`;
+  }
+  if (w) h += `<h3>Bonus AP</h3><p class="muted" style="font-size:15px">For buff payouts not tied to one tile, such as Arcane Reservoir. Use a negative number to correct a mistake.</p>
+    <div class="row"><label style="width:90px">AP<input id="adj-value" type="number" data-draft="adjValue" value="${dval('adjValue')}"></label>
+    <label class="grow">Reason<input id="adj-note" data-draft="adjNote" value="${dval('adjNote')}" placeholder="e.g. Arcane Reservoir after Floor 20"></label>
+    <button class="btn" data-act="adj" ${S.busy ? 'disabled' : ''}>Add bonus</button></div>`;
+  h += '</section></div>';
+  h += `<section class="card"><h3>${esc(t.name)} drop log</h3>${logTable(cur.subs.slice().reverse(), false)}</section>`;
+  if (w) h += `<div class="row"><label>Team colour<select id="team-color" data-act-change="color">${COLORS.map((c, i) => `<option value="${i}" ${(t.color ?? 0) === i ? 'selected' : ''}>Colour ${i + 1}</option>`).join('')}</select></label>
+    ${S.confirm === 'team:' + t.id ? `<button class="btn danger" data-act="del-team">Yes, delete ${esc(t.name)} and its log</button><button class="btn" data-act="cancel">Keep it</button>` : `<button class="btn danger" data-act="ask" data-what="team:${t.id}">Delete team</button>`}</div>`;
+  return h;
+}
+function logTable(subs, showTeam) {
+  if (!subs.length) return `<p class="muted">Nothing logged yet.</p>`;
+  const tn = id => { const t = S.teams.find(t => t.id === id); return t ? t.name : '?'; };
+  return `<div class="tablewrap"><table><thead><tr><th>When</th>${showTeam ? '<th>Team</th>' : ''}<th>Floor</th><th>Tile</th><th>Player</th><th>Note</th><th class="r">Value</th>${S.canWrite ? '<th></th>' : ''}</tr></thead><tbody>` +
+    subs.map(s => {
+      const adj = s.kind === 'adj', boss = !adj && F(s.floor).boss;
+      return `<tr><td class="num muted">${when(s.ts)}</td>${showTeam ? `<td>${esc(tn(s.team))}</td>` : ''}<td class="num">${adj ? '' : s.floor}</td>
+        <td class="t-${esc(s.tier)}">${adj ? '<em>Bonus AP</em>' : `<span style="color:var(--t)">●</span> ${esc(s.tileName)}`}</td><td>${esc(s.player)}</td><td>${esc(s.note)}</td>
+        <td class="r num">${boss ? '−' + fmt(s.value) + ' HP' : (s.value >= 0 ? '+' : '') + fmt(s.value) + ' AP'}</td>
+        ${S.canWrite ? `<td class="r">${S.confirm === 'sub:' + s.id ? `<button class="btn small danger" data-act="del-sub" data-id="${s.id}">Confirm</button>` : `<button class="btn small" data-act="ask" data-what="sub:${s.id}">Delete</button>`}</td>` : ''}</tr>`;
+    }).join('') + '</tbody></table></div>';
+}
+function discordText(st) {
+  return ['**The Duke · Tower of Ascension standings**'].concat(st.map((s, i) =>
+    `${i + 1}. ${s.team.name}: ${s.finished ? 'ASCENDED' : 'Floor ' + s.floor + (F(s.floor).boss ? ' (' + F(s.floor).name + ')' : '')}, ${fmt(s.ap)} AP, ${s.label}`)).join('\n');
+}
+function viewLog(st) {
+  if (!S.loaded) return `<p class="muted">Loading event data…</p>`;
+  const f = S.draft.logTeam || '', subs = S.subs.filter(s => !f || s.team === f).sort((a, b) => b.ts - a.ts);
+  return `<div class="row"><label>Team<select id="log-team" data-draft="logTeam" data-rerender="1"><option value="">All teams</option>${S.teams.map(t => `<option value="${t.id}" ${f === t.id ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select></label>
+    <button class="btn" data-act="copy">Copy standings for Discord</button><span class="muted num">${subs.length} entries</span></div>
+    ${S.copyText ? `<textarea id="copy-text" readonly aria-label="Standings text">${esc(S.copyText)}</textarea>` : ''}
+    <section class="card">${logTable(subs, true)}</section>`;
+}
+function viewRules() {
+  const bosses = FLOORS.filter(f => f.boss);
+  return `<section class="card"><div class="prose">
+    <h2>The event in six lines</h2>
+    <ol>
+      <li>Every team starts on Floor 1 and climbs the same 30 floors. First team to finish Floor 30 wins, and second place is a race too.</li>
+      <li>Each floor lists tiles in four tiers. A tile is usually one drop, such as any CoX purple.</li>
+      <li>On a normal floor each tile counts once and pays Ascension Points (AP).</li>
+      <li>AP adds up across the whole climb. When your total reaches the number on the next floor, you move up.</li>
+      <li>Floors 5, 10, 15, 20, 25 and 30 are bosses. There, tiles deal damage instead of paying AP, and you can repeat them as often as you like until the boss is dead. Each boss has its own mechanic.</li>
+      <li>Killing a boss on Floors 5 to 25 lets your team pick one of three permanent buffs.</li>
+    </ol>
+    <div class="tierkey">${['easy', 'medium', 'hard', 'elite'].map(t => `<span class="t-${t}"><strong style="color:var(--t);text-transform:capitalize">${t}</strong> +${TV[t]} AP or −${TV[t]} boss HP</span>`).join('')}</div>
+  </div></section>
+  <section class="card"><h2>Bosses</h2><div class="tablewrap"><table><thead><tr><th>Floor</th><th>Boss</th><th class="r">HP</th><th class="r">AP to reach</th><th>Mechanic</th><th>Buff choices</th></tr></thead><tbody>` +
+    bosses.map(b => `<tr><td class="num">${b.n}</td><td><strong>${esc(b.name)}</strong></td><td class="r num">${fmt(b.hp)}</td><td class="r num">${fmt(b.unlock)}</td><td>${esc(b.mech.join(' '))}</td>
+      <td>${b.options ? b.options.map(o => `<strong style="color:var(--accent)">${esc(o.name)}</strong>: ${esc(o.text)}`).join('<br>') : esc(b.reward)}</td></tr>`).join('') +
+    `</tbody></table></div></section>
+  <section class="card"><div class="prose">
+    <h2>How this tracker counts</h2>
+    <ul>
+      <li>It adds base values on its own: 5, 10, 15 or 20 per tile. The number is editable on every entry, so add buff and mechanic bonuses there, or log them as Bonus AP on the team page.</li>
+      <li>Boss damage never counts as AP.</li>
+      <li>Floors 6, 11, 16, 21 and 26 have no AP number on the board, so they open as soon as the boss below them dies.</li>
+      <li>On the Abyssal Sentinel the damage box is prefilled from the seal table, using the seals intact before that hit.</li>
+      <li>Boss phases that block damage, such as the Warden's armour, are shown as reminders. Enter 0 damage for a hit that only breaks a phase.</li>
+      <li>EHB gained is shown for interest and as a sanity check. It does not affect AP or floors.</li>
+      <li>If this page and an event admin disagree, the admin is right.</li>
+    </ul>
+  </div></section>`;
+}
+function viewAdmin() {
+  if (!S.loaded) return `<p class="muted">Loading event data…</p>`;
+  if (!S.admin) return `<section class="card" style="max-width:420px"><h2>Admin sign in</h2>
+    ${S.configured ? '' : '<p class="banner err">ADMIN_PASSWORD is not set on the server yet.</p>'}
+    <label>Your name<input id="adm-name" data-draft="admName" value="${dval('admName')}" autocomplete="username" maxlength="40"></label>
+    <label>Admin password<input id="adm-pass" type="password" data-draft="admPass" value="${dval('admPass')}" autocomplete="current-password"></label>
+    <div class="row"><button class="btn primary" data-act="login" ${S.busy ? 'disabled' : ''}>Sign in</button></div>
+    <p class="muted" style="font-size:15px">Your name is recorded next to every change you make.</p></section>`;
+  const a = S.audit;
+  return `<div class="row" style="justify-content:space-between"><p>Signed in as <strong>${esc(S.admin)}</strong>. Log drops from the Teams tab.</p><button class="btn" data-act="logout">Sign out</button></div>
+  <section class="card"><h3>EHB tracking</h3><div class="prose"><p>Create a team competition on wiseoldman.net that covers the event dates and add every player. Then paste the number from its URL here. Any metric works; this page asks Wise Old Man for EHB.</p></div>
+    <div class="row"><label>Wise Old Man competition ID<input id="wom-id" inputmode="numeric" data-draft="womId" value="${dval('womId', S.settings.womId || '')}" placeholder="e.g. 12345"></label>
+    <button class="btn" data-act="save-wom" ${S.busy ? 'disabled' : ''}>Save</button></div>
+    ${S.ehb && S.settings.womId ? `<p class="muted" style="font-size:15px">${S.ehb.error ? esc(S.ehb.error) : `Linked to “${esc(S.ehb.title)}” with ${S.ehb.players.length} players.`}</p>` : ''}</section>
+  <section class="card"><div class="row" style="justify-content:space-between"><h3>Audit log</h3><button class="btn small" data-act="audit">Refresh</button></div>
+    ${!a ? '<p class="muted">Loading…</p>' : !a.length ? '<p class="muted">Nothing recorded yet.</p>' : `<div class="tablewrap"><table><thead><tr><th>When</th><th>Admin</th><th>Action</th><th>Detail</th></tr></thead><tbody>` +
+      a.map(r => `<tr><td class="num muted">${when(r.ts)}</td><td>${esc(r.admin)}</td><td>${esc(r.action)}</td><td style="font-size:14px;word-break:break-word">${esc(auditText(r))}</td></tr>`).join('') + '</tbody></table></div>'}</section>`;
+}
+function auditText(r) {
+  const d = r.detail; if (!d) return '';
+  if (r.action === 'addSub') return `${d.teamName}: ${d.kind === 'adj' ? 'bonus AP' : 'floor ' + d.floor + ', ' + d.tileName} (${d.value})${d.player ? ' by ' + d.player : ''}${d.note ? ' · ' + d.note : ''}`;
+  if (r.action === 'delSub') return d.entry ? `removed ${d.entry.kind === 'adj' ? 'bonus AP' : 'floor ' + d.entry.floor + ', ' + d.entry.tileName} (${d.entry.value})${d.entry.player ? ' by ' + d.entry.player : ''}` : 'entry already gone';
+  if (r.action === 'addTeam') return d.name;
+  if (r.action === 'delTeam') return `${d.team ? d.team.name : d.id}, with ${(d.removedEntries || []).length} entries`;
+  if (r.action === 'patchTeam') return `${d.team}: ${JSON.stringify(d.patch)}`;
+  return JSON.stringify(d);
+}
+function render(force) {
+  const a = document.activeElement;
+  if (!force && a && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName) && a.closest('#app')) { dirty = true; return; }
+  dirty = false;
+  document.getElementById('nav').innerHTML = VIEWS.map(([k, l]) => `<a href="#${k}" ${S.view === k ? 'aria-current="page"' : ''}>${l}</a>`).join('');
+  const m = document.getElementById('mode');
+  m.textContent = !S.loaded ? 'Connecting' : S.admin ? 'Admin · ' + S.admin : 'Live';
+  m.className = 'mode' + (S.loaded ? ' live' : '');
+  let b = '';
+  if (S.stale) b += `<p class="banner">The live data can't be reached right now. What you see may be out of date.</p>`;
+  if (S.error) b += `<p class="banner err" role="alert">${esc(S.error)}</p>`;
+  document.getElementById('banners').innerHTML = b;
+  const st = standings();
+  document.getElementById('app').innerHTML = {tower: viewTower, teams: viewTeams, log: viewLog, rules: viewRules, admin: viewAdmin}[S.view](st);
+}
+
+/* ---------- events ---------- */
+const actions = {
+  floor(el) { S.floorSel = +el.dataset.n; render(true); if (matchMedia('(max-width:760px)').matches) document.getElementById('detail').scrollIntoView({block: 'start'}); },
+  mine(el) { pickTeam(el.dataset.id); S.floorSel = null; render(true); },
+  team(el) { pickTeam(el.dataset.id); S.floorSel = null; S.tileSel = null; S.confirm = null; if (S.view !== 'teams') location.hash = 'teams'; else render(true); },
+  pick(el) { S.tileSel = el.dataset.key; delete S.draft.value; render(true); },
+  ask(el) { S.confirm = el.dataset.what; render(true); },
+  cancel() { S.confirm = null; render(true); },
+  async 'add-team'() {
+    const name = (S.draft.newTeam || '').trim(); if (!name) return;
+    if (await Store.addTeam({name, color: S.teams.length % COLORS.length})) { delete S.draft.newTeam; render(true); }
+  },
+  async 'del-team'() { const id = curTeam().id; S.confirm = null; S.teamSel = null; await Store.delTeam(id); },
+  async 'add-member'() {
+    const t = curTeam(), name = (S.draft.newMember || '').trim(); if (!name || (t.members || []).some(m => norm(m) === norm(name))) return;
+    if (await Store.patchTeam(t.id, {members: [...(t.members || []), name]})) { delete S.draft.newMember; render(true); }
+  },
+  async 'rm-member'(el) { const t = curTeam(); await Store.patchTeam(t.id, {members: (t.members || []).filter(m => norm(m) !== norm(el.dataset.name))}); },
+  async log() {
+    const t = curTeam(), st = compute(t, S.subs), f = F(st.floor), [tier, idx] = S.tileSel.split(':');
+    const raw = S.draft.value, value = raw === undefined || raw === '' ? suggest(st, tier) : Number(raw);
+    if (!Number.isFinite(value)) { S.error = 'Enter a number for the value.'; return render(true); }
+    const ok = await Store.addSub({team: t.id, kind: 'tile', floor: st.floor, tier, tile: +idx, tileName: f.tiles[tier][idx],
+      player: (S.draft.player || '').trim(), note: (S.draft.note || '').trim(), value});
+    if (ok) { S.tileSel = null; delete S.draft.value; delete S.draft.note; render(true); }
+  },
+  async adj() {
+    const t = curTeam(), value = Number(S.draft.adjValue);
+    if (!S.draft.adjValue || !Number.isFinite(value)) { S.error = 'Enter the bonus AP as a number.'; return render(true); }
+    if (await Store.addSub({team: t.id, kind: 'adj', floor: 0, tier: '', tile: -1, tileName: '', player: '', note: (S.draft.adjNote || '').trim(), value})) { delete S.draft.adjValue; delete S.draft.adjNote; render(true); }
+  },
+  async login() {
+    if (S.busy) return; S.busy = true; S.error = '';
+    try { await api('/api/login', {name: S.draft.admName || '', password: S.draft.admPass || ''}); delete S.draft.admPass; S.busy = false; await load(); loadAudit(); }
+    catch (e) { S.busy = false; S.error = e.status ? e.message : 'Could not reach the server.'; render(true); }
+  },
+  async logout() { try { await api('/api/logout', {}); } catch (e) {} S.audit = null; await load(); render(true); },
+  async 'save-wom'() { if (await write({op: 'setSettings', womId: S.draft.womId ?? S.settings.womId ?? ''})) { delete S.draft.womId; render(true); } },
+  audit() { loadAudit(); },
+  async 'del-sub'(el) { S.confirm = null; await Store.delSub(el.dataset.id); },
+  async copy() {
+    S.copyText = discordText(standings());
+    try { await navigator.clipboard.writeText(S.copyText); S.copyText = ''; S.error = ''; flash('Standings copied.'); } catch (e) { render(true); const ta = document.getElementById('copy-text'); if (ta) ta.select(); }
+  },
+};
+function curTeam() { return S.teams.find(t => t.id === S.teamSel) || standings()[0].team; }
+function flash(msg) { const m = document.getElementById('mode'), old = m.textContent; m.textContent = msg; setTimeout(() => { if (m.textContent === msg) m.textContent = old; }, 2000); }
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]'); if (!el || el.disabled) return;
+  const fn = actions[el.dataset.act]; if (fn) fn(el);
+});
+document.addEventListener('input', e => { const k = e.target.dataset && e.target.dataset.draft; if (k) S.draft[k] = e.target.value; });
+document.addEventListener('change', async e => {
+  const el = e.target, act = el.dataset && el.dataset.actChange;
+  if (el.dataset && el.dataset.rerender) return render(true);
+  if (!act) return;
+  const t = curTeam();
+  if (act === 'buff') await Store.patchTeam(t.id, {buffs: {...(t.buffs || {}), [el.dataset.n]: el.value === '' ? null : +el.value}});
+  if (act === 'color') await Store.patchTeam(t.id, {color: +el.value});
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' || e.target.tagName !== 'INPUT') return;
+  const map = {'new-team': 'add-team', 'new-member': 'add-member', 'sub-player': 'log', 'sub-note': 'log', 'sub-value': 'log', 'adj-value': 'adj', 'adj-note': 'adj', 'adm-name': 'login', 'adm-pass': 'login', 'wom-id': 'save-wom'};
+  const act = map[e.target.id]; if (act) { e.preventDefault(); actions[act](e.target); }
+});
+document.addEventListener('focusout', () => { if (dirty) setTimeout(() => { if (dirty) render(); }, 300); });
+addEventListener('hashchange', () => { route(); S.confirm = null; S.error = ''; render(true); scrollTo(0, 0); if (S.view === 'admin') loadAudit(); });
+/* ---------- background: drifting smoke with occasional lightning ---------- */
+(function () {
+  const c = document.getElementById('sky'), x = c.getContext('2d');
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let w, h, blobs = [], specks = [], bolts = [], next = 1500, last = 0;
+  function size() {
+    w = c.width = Math.ceil(innerWidth / 2); h = c.height = Math.ceil(innerHeight / 2);
+    const m = Math.max(w, h);
+    blobs = Array.from({length: 18}, () => ({x: Math.random() * w, y: Math.random() * h, r: (.22 + Math.random() * .32) * m,
+      vx: (Math.random() - .5) * .014, vy: (Math.random() - .5) * .007, a: .07 + Math.random() * .11, hue: 212 + Math.random() * 16}));
+    specks = Array.from({length: 46}, () => ({x: Math.random() * w, y: Math.random() * h, r: .4 + Math.random() * 1.1, v: .004 + Math.random() * .01, a: .25 + Math.random() * .55}));
+  }
+  function bolt() {
+    let px = w * (.1 + Math.random() * .8), py = 0; const pts = [[px, py]], end = h * (.45 + Math.random() * .55);
+    while (py < end) { px += (Math.random() - .5) * w * .07; py += h * (.02 + Math.random() * .05); pts.push([px, py]); }
+    const branches = [];
+    for (let n = 0; n < 2 && pts.length > 5; n++) {
+      let [bx, by] = pts[2 + Math.floor(Math.random() * (pts.length - 4))]; const br = [[bx, by]], dir = Math.random() < .5 ? -1 : 1;
+      for (let k = 0; k < 5; k++) { bx += dir * w * (.01 + .03 * Math.random()); by += h * .03 * Math.random() + h * .01; br.push([bx, by]); }
+      branches.push(br);
+    }
+    bolts.push({pts, branches, life: 1});
+  }
+  function line(pts, a, wd) {
+    x.beginPath(); pts.forEach((p, i) => i ? x.lineTo(p[0], p[1]) : x.moveTo(p[0], p[1]));
+    x.strokeStyle = `rgba(190,225,255,${a})`; x.lineWidth = wd; x.stroke();
+  }
+  function frame(t) {
+    const dt = Math.min(50, t - last); last = t;
+    x.globalCompositeOperation = 'source-over'; x.fillStyle = '#03060f'; x.fillRect(0, 0, w, h);
+    x.globalCompositeOperation = 'lighter';
+    for (const b of blobs) {
+      b.x += b.vx * dt; b.y += b.vy * dt;
+      if (b.x < -b.r) b.x = w + b.r; if (b.x > w + b.r) b.x = -b.r; if (b.y < -b.r) b.y = h + b.r; if (b.y > h + b.r) b.y = -b.r;
+      const g = x.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
+      g.addColorStop(0, `hsla(${b.hue},95%,50%,${b.a})`); g.addColorStop(.55, `hsla(${b.hue},90%,36%,${b.a * .4})`); g.addColorStop(1, `hsla(${b.hue},90%,30%,0)`);
+      x.fillStyle = g; x.fillRect(b.x - b.r, b.y - b.r, b.r * 2, b.r * 2);
+    }
+    for (const s of specks) {
+      s.y -= s.v * dt; if (s.y < -2) { s.y = h + 2; s.x = Math.random() * w; }
+      x.fillStyle = `rgba(120,185,255,${s.a})`; x.beginPath(); x.arc(s.x, s.y, s.r, 0, 6.3); x.fill();
+    }
+    if (still) return;
+    if (t > next) { bolt(); next = t + 3000 + Math.random() * 6000; }
+    bolts = bolts.filter(b => b.life > 0);
+    for (const b of bolts) {
+      x.fillStyle = `rgba(70,140,255,${b.life * .05})`; x.fillRect(0, 0, w, h);
+      x.shadowColor = '#5fb2ff'; x.shadowBlur = 14;
+      line(b.pts, b.life * .9, 1.4); for (const br of b.branches) line(br, b.life * .5, .8);
+      x.shadowBlur = 0; b.life -= dt / 500;
+    }
+    requestAnimationFrame(frame);
+  }
+  size(); addEventListener('resize', () => { size(); if (still) frame(0); });
+  if (still) frame(0); else requestAnimationFrame(frame);
+})();
+init();
+</script>
+</body>
+</html>
