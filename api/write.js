@@ -41,7 +41,7 @@ const ops = {
     if (!Number.isFinite(value) || Math.abs(value) > 100000) throw fail(400, 'Enter a sensible number for the value.');
     if (!Number.isInteger(floor) || floor < 0 || floor > 30) throw fail(400, 'Bad floor.');
     const data = {team: String(s.team), kind: s.kind === 'adj' ? 'adj' : 'tile', floor, tier: str(s.tier, 10), tile: Number(s.tile) || 0,
-      tileName: str(s.tileName, 160), player: str(s.player, 12), note: str(s.note, 200), proof: link(s.proof), value, ts: Date.now(), by: admin};
+      tileName: str(s.tileName, 160), player: str(s.player, 12), note: str(s.note, 200), proof: link(s.proof), value, ts: Date.now(), by: admin, ...(s.via === 'dry' ? {via: 'dry'} : {})};
     const id = uid();
     await db().query('insert into subs (id, data) values ($1, $2)', [id, data]);
     return {id, ...data, teamName: team.name};
