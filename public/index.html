@@ -40,6 +40,20 @@ button{cursor:pointer}
 #sky{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
 .wrap{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:20px 16px 64px}
 
+/* event countdown */
+.cd{position:relative;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 24px;margin-top:16px;padding:12px 16px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.cd:empty{display:none}
+.cd.live{border-color:var(--line-2)}
+.cd-l b{display:block;font:700 22px/1.1 var(--display);letter-spacing:.01em}
+.cd-l span{font-size:14px;color:var(--muted)}
+.cd-t{display:flex;gap:6px}
+.cd-u{min-width:58px;padding:7px 8px 6px;text-align:center;background:var(--sunk);border:1px solid var(--line);border-radius:8px}
+.cd-u b{display:block;font:800 28px/1 var(--display);font-variant-numeric:tabular-nums}
+.cd-u span{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.cd.live .cd-u b{color:var(--accent-2)}
+.cd-bar{position:absolute;left:0;bottom:0;height:2px;background:var(--accent)}
+@media (max-width:520px){.cd-t{width:100%}.cd-u{flex:1;min-width:0}}
+
 /* header */
 header.top{display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"crest title mode" "nav nav nav";gap:18px 20px;align-items:center}
 .crest{grid-area:crest;height:76px;width:auto;border-radius:8px;display:block;box-shadow:var(--lift)}
@@ -242,6 +256,7 @@ tr.fresh td{animation:fresh 2.6s ease-out}
     <nav id="nav" aria-label="Sections"></nav>
     <span id="mode" class="mode">Connecting</span>
   </header>
+  <div id="cd" class="cd" role="timer"></div>
   <div id="banners"></div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <main id="app"></main>
@@ -578,7 +593,34 @@ function ehbFor(team) {
   }
   return out;
 }
+/* ---------- event countdown ---------- */
+const EVENT = {start: Date.UTC(2026, 10, 28, 12), end: Date.UTC(2026, 11, 6, 12)};
+let cdPhase = null;
+function tickCountdown() {
+  const el = document.getElementById('cd'), now = Date.now();
+  const phase = now < EVENT.start ? 'before' : now < EVENT.end ? 'live' : 'over';
+  const target = phase === 'before' ? EVENT.start : EVENT.end;
+  if (phase !== cdPhase) {
+    cdPhase = phase;
+    const local = new Date(target).toLocaleString([], {weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit'});
+    const title = {before: 'Event starts in', live: 'Event ends in', over: 'The event has ended'}[phase];
+    el.className = 'cd ' + phase;
+    el.innerHTML = `<div class="cd-l"><b>${title}</b><span>${phase === 'before' ? '28 Nov' : '6 Dec'}, 12:00 UTC · ${esc(local)} your time</span></div>`
+      + (phase === 'over' ? '' : `<div class="cd-t" aria-hidden="true">${['days', 'hrs', 'min', 'sec'].map(u => `<div class="cd-u"><b>00</b><span>${u}</span></div>`).join('')}</div>`)
+      + (phase === 'live' ? '<i class="cd-bar"></i>' : '');
+    if (phase === 'over') el.removeAttribute('aria-label');
+  }
+  if (phase === 'over') return;
+  const s = Math.ceil((target - now) / 1000);
+  const parts = [Math.floor(s / 86400), Math.floor(s % 86400 / 3600), Math.floor(s % 3600 / 60), s % 60];
+  el.querySelectorAll('.cd-u b').forEach((b, i) => { const v = String(parts[i]).padStart(2, '0'); if (b.textContent !== v) b.textContent = v; });
+  const label = `${phase === 'before' ? 'Event starts in' : 'Event ends in'} ${parts[0]} days ${parts[1]} hours ${parts[2]} minutes`;
+  if (el.getAttribute('aria-label') !== label) el.setAttribute('aria-label', label);
+  const bar = el.querySelector('.cd-bar');
+  if (bar) bar.style.width = ((now - EVENT.start) / (EVENT.end - EVENT.start) * 100).toFixed(2) + '%';
+}
 async function init() {
+  tickCountdown(); setInterval(tickCountdown, 1000);
   route(); render(true);
   await load();
   if (S.view === 'admin') loadAudit();
