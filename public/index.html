@@ -54,6 +54,42 @@ button{cursor:pointer}
 .cd-bar{position:absolute;left:0;bottom:0;height:2px;background:var(--accent)}
 @media (max-width:520px){.cd-t{width:100%}.cd-u{flex:1;min-width:0}}
 
+/* latest drops */
+.feed{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--lift);padding:14px 20px 16px;display:flex;flex-direction:column;gap:10px}
+.feed-h{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.feed-h a{font-size:14px}
+.feed ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 12px}
+.feed li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1px 10px;padding:8px 12px;background:var(--sunk);border:1px solid var(--line);border-left:3px solid var(--c);border-radius:8px}
+.fd-main,.fd-sub{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fd-val{font-weight:700;color:var(--t)}
+.fd-sub{grid-column:1/-1;font-size:13.5px;color:var(--muted)}
+.fd-sub a{color:var(--accent-2)}
+.feed li.fresh{animation:fresh 2.6s ease-out}
+@media (max-width:900px){.feed ul{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:600px){.feed{padding:12px 14px 14px}.feed ul{grid-template-columns:minmax(0,1fr)}.feed li:nth-child(n+5){display:none}}
+
+/* leaderboards */
+.boards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;align-items:start}
+@media (max-width:900px){.boards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:600px){.boards{grid-template-columns:minmax(0,1fr)}}
+.lb{list-style:none;margin:0;padding:0}
+.lb li{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:10px;align-items:center;padding:7px 0;border-top:1px solid var(--line)}
+.lb .rk{font:800 20px/1 var(--display);color:var(--muted);text-align:center}
+.lb li:first-child .rk{color:var(--accent)}
+.lb .nm{display:flex;flex-direction:column;line-height:1.3;min-width:0}
+.lb .nm>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb small,.tm{color:var(--muted);font-size:13px;display:flex;align-items:center;gap:6px}
+.lb small::before,.tm::before{content:"";flex:none;width:8px;height:8px;border-radius:2px;background:var(--c)}
+.tm{font-size:inherit;color:inherit}
+.lb b{font:700 21px/1 var(--display)}
+
+/* hunt next, duplicate warnings */
+.hunt td small{display:block;color:var(--muted);font-size:13.5px}
+.best{display:inline-block;margin-left:8px;padding:1px 7px;border-radius:99px;border:1px solid var(--accent);color:var(--accent-2);font-size:12px;font-weight:700;white-space:nowrap;vertical-align:1px}
+.warn{border:1px solid rgba(247,163,92,.5);background:rgba(247,163,92,.09);padding:10px 14px;border-radius:8px;font-size:15px;display:flex;flex-direction:column;gap:6px}
+.warn strong{color:var(--elite)}
+#dup-warn:empty{display:none}
+
 /* header */
 header.top{display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"crest title mode" "nav nav nav";gap:18px 20px;align-items:center}
 .crest{grid-area:crest;height:76px;width:auto;border-radius:8px;display:block;box-shadow:var(--lift)}
@@ -272,7 +308,7 @@ const TV = {easy: 5, medium: 10, hard: 15, elite: 20};
 const SEAL = {elite: [20, 18, 16, 14, 12], hard: [15, 14, 12, 11, 9], medium: [10, 9, 8, 7, 6], easy: [5, 4, 4, 3, 3]};
 const RAIDS = ['CoX', 'ToB', 'ToA', 'TFA'];
 const COLORS = ['#ef6a6a', '#4aa8ff', '#6fbf73', '#d9b45a', '#b889f0', '#f08a4b', '#4fc4b8', '#e07aa8'];
-const VIEWS = [['tower', 'Tower'], ['teams', 'Teams'], ['log', 'Drop log'], ['tiles', 'Tile list'], ['rules', 'Rules'], ['admin', 'Admin']];
+const VIEWS = [['tower', 'Tower'], ['teams', 'Teams'], ['players', 'Leaderboard'], ['log', 'Drop log'], ['tiles', 'Tile list'], ['rules', 'Rules'], ['admin', 'Admin']];
 const CHECK = '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5"/></svg>';
 // Suggested drops for the "Drop or note" field, keyed by the start of a tile name. Suggestions only: admins can still type anything.
 const DROPS = {
@@ -369,7 +405,7 @@ const XICON = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" strok
 const LINKICON = '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3.5" width="12" height="9" rx="1.5"/><circle cx="6" cy="7" r="1.2"/><path d="M14 11l-3.5-3.5L5 13"/></svg>';
 const TEAM_KEY = 'tower-of-ascension-team';
 
-const S = {teams: [], subs: [], settings: {}, admin: null, configured: true, ehb: null, audit: null, canWrite: false, loaded: false, stale: false, error: '',
+const S = {teams: [], subs: [], settings: {}, admin: null, configured: true, ehb: null, audit: null, fog: {active: false}, canWrite: false, loaded: false, stale: false, error: '',
   view: 'tower', proofEdit: null, floorSel: null, teamSel: null, tileSel: null, draft: {}, confirm: null, busy: false, copyText: ''};
 let dirty = false;
 try { S.teamSel = localStorage.getItem(TEAM_KEY); S.guideHidden = localStorage.getItem('tower-of-ascension-guide') === 'hidden'; } catch (e) {}
@@ -380,6 +416,9 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '
 const fmt = n => Number(n).toLocaleString('en-US');
 const when = ts => new Date(ts).toLocaleString(undefined, {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'});
 const tcolor = t => COLORS[(t.color ?? 0) % COLORS.length];
+const ago = ts => { const s = Math.max(0, (Date.now() - ts) / 1000); return s < 60 ? 'just now' : s < 3600 ? Math.floor(s / 60) + 'm ago' : s < 86400 ? Math.floor(s / 3600) + 'h ago' : Math.floor(s / 86400) + 'd ago'; };
+const teamOf = id => S.teams.find(t => t.id === id);
+const worth = s => s.kind !== 'adj' && F(s.floor).boss ? '−' + fmt(s.value) + ' HP' : (s.value >= 0 ? '+' : '') + fmt(s.value) + ' AP';
 
 /* ---------- scoring ---------- */
 function compute(team, allSubs) {
@@ -517,6 +556,71 @@ function dryFor(tileName, team) {
   return (key ? DRY[key] : []).map(([kc, what]) => !kc ? what : fav ? `${fmt(Math.ceil(kc * 0.8))} ${what} (${fmt(kc)} before Fortune's Favor)` : `${fmt(kc)} ${what}`);
 }
 
+// The fewest tiles that carry a team off a normal floor: take the best-paying tile, re-score, repeat.
+function fewest(cur) {
+  const f = F(cur.floor), picks = [];
+  let st = cur, subs = cur.subs.slice(), ts = Math.max(Date.now(), ...subs.map(s => s.ts));
+  while (picks.length < 30 && !st.finished && st.floor === f.n) {
+    let best = null;
+    for (const tier of TIERS) (f.tiles[tier] || []).forEach((name, i) => {
+      if ((st.done[f.n] || {})[tier + ':' + i]) return;
+      const v = hit(st, tier, i).value; if (!best || v > best.v) best = {tier, i, name, v};
+    });
+    if (!best || best.v <= 0) break;
+    picks.push(best);
+    subs = [...subs, {team: cur.team.id, kind: 'tile', floor: f.n, tier: best.tier, tile: best.i, tileName: best.name, value: best.v, ts: ++ts}];
+    st = compute(cur.team, subs);
+  }
+  return {picks, reached: st.finished || st.floor > f.n};
+}
+// Every tile the team can still do on its floor, ranked by what it pays this team right now.
+function huntHtml(cur) {
+  const t = cur.team, f = F(cur.floor), done = cur.done[f.n] || {}, rows = [];
+  for (const tier of TIERS) (f.tiles[tier] || []).forEach((name, i) => { if (f.boss || !done[tier + ':' + i]) rows.push({tier, name, x: hit(cur, tier, i), dry: dryFor(name, t)}); });
+  if (!rows.length) return '';
+  rows.sort((a, b) => b.x.value - a.x.value);
+  const best = rows[0].x.value, s = n => n === 1 ? '' : 's';
+  let sum;
+  if (f.boss) sum = best > 0 ? `<strong>${fmt(cur.need)} HP</strong> left on ${esc(f.name)}. At the best hit available now (${best}), that is about <strong>${Math.ceil(cur.need / best)}</strong> more tile${s(Math.ceil(cur.need / best))}.`
+    : `<strong>${fmt(cur.need)} HP</strong> left on ${esc(f.name)}, and no tile deals damage until its mechanic is dealt with. The notes below say which tiles do that.`;
+  else {
+    const p = fewest(cur), eg = p.picks.slice(0, 4).map(x => `${esc(x.name)} (+${x.v})`).join(', then ') + (p.picks.length > 4 ? `, and ${p.picks.length - 4} more` : '');
+    sum = p.reached ? `<strong>${fmt(cur.need)} AP</strong> to Floor ${f.n + 1}. Fewest tiles to get there: <strong>${p.picks.length}</strong>. For example ${eg}.`
+      : `<strong>${fmt(cur.need)} AP</strong> to Floor ${f.n + 1}. The tiles left on this floor do not add up to that, so ask an event admin.`;
+  }
+  return `<section class="card hunt"><div><h3>What to hunt next</h3><p class="num" style="margin-top:6px">${sum}</p></div>
+    <div class="tablewrap"><table><thead><tr><th>Tile</th><th class="r">Worth now</th><th>Without the drop</th></tr></thead><tbody>` +
+    rows.map(r => { const x = r.x, extra = [x.block, x.parts.length > 1 && !x.block ? x.parts.map(([l, v], i) => `${i ? (v < 0 ? '− ' : '+ ') : ''}${Math.abs(v)} ${l}`).join(' ') : '', ...x.notes, x.manual.length ? 'Plus ' + x.manual.join(', ') : ''].filter(Boolean);
+      return `<tr class="t-${r.tier}"><td><span class="swatch"></span>${esc(r.name)}${best > 0 && x.value === best ? '<span class="best">Top pick</span>' : ''}${extra.map(l => `<small>${esc(l)}</small>`).join('')}</td>
+        <td class="r num" style="white-space:nowrap"><strong>${f.boss ? '−' + x.value + ' HP' : '+' + x.value + ' AP'}</strong></td>
+        <td class="num">${r.dry.length ? r.dry.map(esc).join('<br><span class="muted">or</span> ') : '<span class="muted">Drop only</span>'}</td></tr>`; }).join('') +
+    `</tbody></table></div><p class="muted" style="font-size:14px">Ranked by what each tile pays ${esc(t.name)} right now, with buffs${f.boss ? ' and the boss mechanic' : ''} counted. It does not know how long a drop takes, so weigh it against your own gear and luck.</p></section>`;
+}
+// Reasons the entry being typed might already be in the log. They warn; they never block.
+function dupWarnings(cur, tier, idx) {
+  const name = (F(cur.floor).tiles[tier] || [])[idx], d = S.draft, out = [], now = Date.now();
+  if (!name) return out;
+  const player = norm(d.player), note = norm(d.note), proof = (d.proof || '').trim();
+  const desc = s => (s.kind === 'adj' ? 'bonus AP' : s.tileName) + (s.player ? ', ' + s.player : '');
+  const shot = proof && S.subs.find(s => s.proof === proof);
+  if (shot) out.push(`This screenshot link is already on an entry: ${(teamOf(shot.team) || {}).name || '?'}, Floor ${shot.floor}, ${desc(shot)}, ${ago(shot.ts)}.`);
+  const same = player && cur.subs.filter(s => s.kind !== 'adj' && norm(s.player) === player && now - s.ts < 36e5 && (s.tileName === name || (note && norm(s.note) === note))).pop();
+  if (same) out.push(`${same.player} already had ${same.tileName === name ? 'this tile' : '“' + same.note + '”'} logged ${ago(same.ts)} on Floor ${same.floor}${same.by ? ' by ' + same.by : ''}. Check this is a second drop and not the same one.`);
+  const other = cur.subs.filter(s => s.by && s.by !== S.admin && now - s.ts < 18e4 && s !== same).pop();
+  if (other) out.push(`${other.by} logged an entry for this team ${ago(other.ts)}: ${desc(other)}. Check you are not both logging the same submission.`);
+  return out;
+}
+const dupHtml = w => w.length ? `<div class="warn"><strong>Possible duplicate</strong>${w.map(l => `<span>${esc(l)}</span>`).join('')}</div>` : '';
+let dupShown = '';
+function refreshDup() {
+  const box = document.getElementById('dup-warn'); if (!box || !S.tileSel) return;
+  const [tier, idx] = S.tileSel.split(':'), w = dupWarnings(compute(curTeam(), S.subs), tier, idx), html = dupHtml(w);
+  if (html !== dupShown) { dupShown = html; box.innerHTML = html; }
+  const b = document.querySelector('[data-act="log"]'); if (b) b.textContent = w.length ? 'Log anyway' : 'Log it';
+}
+// The newest entry this page knows of for a team. The server refuses a log if a newer one exists, so two admins cannot double up.
+const seenOf = t => Math.max(0, ...S.subs.filter(s => s.team === t.id).map(s => s.ts));
+
 /* ---------- server ---------- */
 async function api(path, body) {
   const r = await fetch(path, body ? {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify(body)} : {cache: 'no-store'});
@@ -527,27 +631,34 @@ async function api(path, body) {
 function apply(st) {
   const before = S.settings.womId;
   S.teams = st.teams; S.subs = st.subs; S.settings = st.settings || {}; S.admin = st.admin; S.configured = st.configured;
+  S.fog = st.fog || {active: false};
   S.canWrite = !!st.admin; S.loaded = true; S.stale = false;
   noteFresh(st.subs);
   if (S.settings.womId !== before) loadEhb();
 }
 async function load() {
-  const was = S.loaded ? new Map(standings().map(s => [s.team.id, s])) : null;
+  const was = S.loaded ? new Map(standings().map(s => [s.team.id, s])) : null, fogged = S.fog.active && !S.admin;
   try { apply(await api('/api/state')); } catch (e) { S.stale = true; }
   render();
-  if (was) heard(was);
+  if (was) heard(was, fogged && !S.fog.active && !S.stale);
 }
 // Everyone watching hears about a climb: compare standings across a refresh and call out each team that moved up.
-function heard(was) {
+function heard(was, lifted) {
   if (document.querySelector('#toast.show [data-act="undo"]')) return; // never replace an admin's undo
   const ups = standings().map(now => ({now, old: was.get(now.team.id)}))
     .filter(({now, old}) => old && (now.finished ? !old.finished : now.floor > old.floor));
-  if (!ups.length) return;
+  if (!ups.length && !lifted) return;
   const line = ({now, old}) => {
     if (now.finished) return `${now.team.name} ascended!`;
     const boss = FLOORS.filter(f => f.boss && f.n >= old.floor && f.n < now.floor).pop();
     return boss ? `${now.team.name} killed ${boss.name}` : `${now.team.name} reached Floor ${now.floor}`;
   };
+  if (lifted) { // the reveal: everything that happened under the fog arrives at once
+    const top = standings()[0];
+    toast({milestone: 'The fog has lifted', msg: [top ? `${top.team.name} ${top.finished ? 'reached the top first' : 'leads on Floor ' + top.floor}.` : '', ...ups.map(line)].filter(Boolean).slice(0, 6).join(' · '), sticky: true});
+    if (window.skyStrike) skyStrike(3);
+    return;
+  }
   const big = ups.some(({now, old}) => now.finished || FLOORS.some(f => f.boss && f.n >= old.floor && f.n < now.floor));
   // The popup stays until it is closed. Anything that happens while it is open is added to it, newest first.
   news = [...ups.map(line), ...news].slice(0, 5);
@@ -571,6 +682,8 @@ async function write(body) {
   catch (e) {
     if (e.status === 401) { S.admin = null; S.canWrite = false; S.error = 'Your admin session has ended. Sign in again on the Admin tab.'; }
     else S.error = e.status ? e.message : 'That change could not be saved. Check your connection and try again.';
+    // Someone else changed this team first: drop the half-filled form and show the page as it now stands.
+    if (e.status === 409) { S.tileSel = null; delete S.draft.value; setTimeout(async () => { await load(); render(true); }); }
     return false;
   } finally { S.busy = false; render(true); }
 }
@@ -680,6 +793,16 @@ function trackHtml(s) {
   }
   return `<span class="track" aria-hidden="true" data-team="${s.team.id}" data-p="${s.finished ? 30 : s.floor - 1 + Math.round(s.pct * 100) / 100}">${h}</span>`;
 }
+// The newest drops across every team, so the page shows life between climbs.
+function feedHtml() {
+  const subs = S.subs.filter(s => s.kind !== 'adj' && teamOf(s.team)).sort((a, b) => b.ts - a.ts).slice(0, 6);
+  if (!subs.length) return '';
+  return `<section class="feed" aria-label="Latest drops"><div class="feed-h"><h3>Latest drops</h3><a href="#log">Full drop log</a></div><ul>` + subs.map(s => {
+    const t = teamOf(s.team), dry = s.via === 'dry', what = dry ? s.tileName : s.note || s.tileName;
+    return `<li class="t-${esc(s.tier)}${motion.fresh.has(s.id) ? ' fresh' : ''}" style="--c:${tcolor(t)}"><span class="fd-main" title="${esc(what)}"><strong>${esc(s.player || 'Unknown')}</strong> ${esc(what)}</span><span class="fd-val num">${worth(s)}</span>
+      <span class="fd-sub">${esc(t.name)} · Floor ${s.floor}${dry ? ' · dry protection' : ''} · ${ago(s.ts)}${s.proof && isLink(s.proof) ? ` · <a href="${esc(s.proof)}" target="_blank" rel="noopener noreferrer">Screenshot</a>` : ''}</span></li>`;
+  }).join('') + '</ul></section>';
+}
 function viewTower(st) {
   const me = st.find(s => s.team.id === S.teamSel) || st[0], sel = S.floorSel || (me ? me.floor : 1), f = F(sel);
   let rows = '';
@@ -695,7 +818,7 @@ function viewTower(st) {
   const pills = st.length > 1 ? `<div class="pills"><span class="muted">Show the tower for</span>` + st.map(s => `<button class="pill" style="--c:${tcolor(s.team)}" data-act="mine" data-id="${s.team.id}" aria-pressed="${s.team.id === me.team.id}">${esc(s.team.name)}</button>`).join('') + '</div>' : '';
   const where = !me ? '' : me.finished || f.n < me.floor ? `<p class="here">${esc(me.team.name)} cleared this floor.</p>`
     : f.n === me.floor ? `<p class="here on">${esc(me.team.name)} is here · ${esc(me.label)}</p>` : `<p class="here">${esc(me.team.name)} has not reached this floor yet.</p>`;
-  return standingsHtml(st) + pills + `<div class="towergrid">
+  return standingsHtml(st) + feedHtml() + pills + `<div class="towergrid">
     <div class="tower" aria-label="Floors, top to bottom">${rows}</div>
     <section class="card detail" id="detail">
       <div><h2>Floor ${f.n}${f.boss ? ' · ' + esc(f.name) : ''}</h2>
@@ -724,7 +847,8 @@ function viewTeams(st) {
     if (w && S.tileSel) {
       const [tier, idx] = S.tileSel.split(':'), name = f.tiles[tier] && f.tiles[tier][idx];
       if (name) {
-        const x = hit(cur, tier, idx), dry = dryFor(name, t), lines = [];
+        const x = hit(cur, tier, idx), dry = dryFor(name, t), lines = [], dup = dupWarnings(cur, tier, idx);
+        dupShown = dupHtml(dup);
         if (x.block) lines.push(x.block);
         else if (x.parts.length > 1) lines.push(`${x.value} ${f.boss ? 'damage' : 'AP'} = ` + x.parts.map(([l, v], i) => `${i ? (v < 0 ? '− ' : '+ ') : ''}${Math.abs(v)} ${l}`).join(' '));
         lines.push(...x.notes);
@@ -733,20 +857,23 @@ function viewTeams(st) {
           <p><strong>${esc(name)}</strong> <span class="muted">${tier}</span></p>
           ${lines.map(l => `<p class="muted num" style="font-size:15px">${esc(l)}</p>`).join('')}
           ${dry.length ? `<label>Completed by<select id="sub-via" data-draft="via"><option value="">Drop</option>${dry.map(d => `<option value="${esc(d)}" ${S.draft.via === d ? 'selected' : ''}>Dry protection: ${esc(d)}</option>`).join('')}</select></label>` : ''}
+          <div id="dup-warn" aria-live="polite">${dupShown}</div>
           <div class="row">
             ${(t.members || []).length
               ? `<label class="grow">Player<select id="sub-player" data-draft="player"><option value="">Choose a player</option>${t.members.map(m => `<option ${S.draft.player === m ? 'selected' : ''}>${esc(m)}</option>`).join('')}</select></label>`
               : `<p class="grow muted" style="font-size:15px">Add this team's members below before logging drops.</p>`}
             <label class="grow">Drop or note<input id="sub-note" list="drops" data-draft="note" value="${dval('note')}" placeholder="${dropsFor(name).length ? 'Pick or type a drop' : 'e.g. Tumeken\'s shadow'}" autocomplete="off"></label>
             <label style="width:110px">${f.boss ? 'Damage' : 'AP'}<input id="sub-value" type="number" data-draft="value" value="${dval('value', x.value)}"></label>
-            <button class="btn primary" data-act="log" ${S.busy || !(t.members || []).length ? 'disabled' : ''}>Log it</button>
+            <button class="btn primary" data-act="log" ${S.busy || !(t.members || []).length ? 'disabled' : ''}>${dup.length ? 'Log anyway' : 'Log it'}</button>
           </div>
           <label>Screenshot link <span class="muted">(optional: Discord, Imgur or Gyazo link)</span><input id="sub-proof" type="url" inputmode="url" data-draft="proof" value="${dval('proof')}" placeholder="https://" autocomplete="off"></label>
           <datalist id="drops">${dropsFor(name).map(d => `<option value="${esc(d)}">`).join('')}</datalist></div>`;
       }
     }
   }
-  h += '</section><div class="cols">';
+  h += '</section>';
+  if (!cur.finished) h += huntHtml(cur);
+  h += '<div class="cols">';
   // members + contributions
   const rowsBy = {}, row = name => rowsBy[norm(name)] = rowsBy[norm(name)] || {name, n: 0, v: 0, ehb: null, member: false};
   for (const m of t.members || []) row(m).member = true;
@@ -801,6 +928,48 @@ function noteCell(s) {
 function discordText(st) {
   return ['**The Duke · Tower of Ascension standings**'].concat(st.map((s, i) =>
     `${i + 1}. ${s.team.name}: ${s.finished ? 'ASCENDED' : 'Floor ' + s.floor + (F(s.floor).boss ? ' (' + F(s.floor).name + ')' : '')}, ${fmt(s.ap)} AP, ${s.label}`)).join('\n');
+}
+// One row per player who has logged a tile, plus tracked members with EHB but no tiles yet.
+function playerStats() {
+  const by = {}, blank = (name, team) => ({name, team, n: 0, v: 0, elite: 0, hard: 0, medium: 0, easy: 0, hi: 0, dry: 0, best: 0, ehb: null});
+  for (const s of S.subs) {
+    const t = teamOf(s.team); if (s.kind === 'adj' || !s.player || !t) continue;
+    const r = by[norm(s.player)] = by[norm(s.player)] || blank(s.player, t), v = Number(s.value) || 0;
+    r.n++; r.v += v; r.best = Math.max(r.best, v);
+    if (s.tier in TV) r[s.tier]++;
+    if (s.tier === 'elite' || s.tier === 'hard') r.hi++;
+    if (s.via === 'dry') r.dry++;
+  }
+  if (S.settings.womId && S.ehb && S.ehb.players) for (const p of S.ehb.players) {
+    const k = norm(p.name), t = by[k] ? null : S.teams.find(t => (t.members || []).some(m => norm(m) === k));
+    if (t) by[k] = blank(p.name, t);
+    if (by[k]) by[k].ehb = p.gained;
+  }
+  return Object.values(by);
+}
+function viewPlayers() {
+  if (!S.loaded) return `<p class="muted">Loading event data…</p>`;
+  const all = playerStats(), hasEhb = !!(S.settings.womId && S.ehb && !S.ehb.error);
+  if (!all.some(p => p.n)) return `<section class="card"><h2>Leaderboard</h2><p>No drops logged yet. The boards fill in as soon as the first tile is logged.</p></section>`;
+  const who = p => `<span class="tm" style="--c:${tcolor(p.team)}">${esc(p.team.name)}</span>`;
+  const board = (title, hint, key, show = fmt) => {
+    const top = all.filter(p => p[key] > 0).sort((a, b) => (b[key] - a[key]) || (b.v - a.v) || a.name.localeCompare(b.name)).slice(0, 5);
+    return `<section class="card"><div><h3>${title}</h3><p class="muted" style="font-size:14px;margin-top:4px">${hint}</p></div>${top.length
+      ? `<ol class="lb">${top.map((p, i) => `<li style="--c:${tcolor(p.team)}"><span class="rk num">${i + 1}</span><span class="nm"><span>${esc(p.name)}</span><small>${esc(p.team.name)}</small></span><b class="num">${show(p[key])}</b></li>`).join('')}</ol>`
+      : '<p class="muted">Nobody yet.</p>'}</section>`;
+  };
+  const rows = all.slice().sort((a, b) => (b.v - a.v) || (b.n - a.n) || ((b.ehb || 0) - (a.ehb || 0)) || a.name.localeCompare(b.name));
+  return `<div class="boards">
+    ${board('Most points', 'AP and boss damage added together', 'v')}
+    ${board('Most tiles', 'Tiles completed, any tier', 'n')}
+    ${board('Elite and Hard hunters', 'Elite and Hard tiles completed', 'hi')}
+    ${board('Biggest single hit', 'Most from one tile, bonuses included', 'best')}
+    ${board('Driest', 'Tiles finished with dry protection', 'dry')}
+    ${hasEhb ? board('Most EHB gained', 'Efficient hours bossed, from Wise Old Man', 'ehb', v => v.toFixed(1)) : ''}
+  </div>
+  <section class="card"><h3>All players</h3><div class="tablewrap"><table><thead><tr><th class="r">#</th><th>Player</th><th>Team</th><th class="r">Tiles</th><th class="r">Elite</th><th class="r">Hard</th><th class="r">Medium</th><th class="r">Easy</th><th class="r">Dry</th><th class="r">AP + damage</th>${hasEhb ? '<th class="r">EHB gained</th>' : ''}</tr></thead><tbody>` +
+    rows.map((p, i) => `<tr><td class="r num muted">${i + 1}</td><td>${esc(p.name)}</td><td>${who(p)}</td><td class="r num">${p.n}</td>${['elite', 'hard', 'medium', 'easy'].map(k => `<td class="r num t-${k}"${p[k] ? ' style="color:var(--t)"' : ''}>${p[k] || '<span class="muted">0</span>'}</td>`).join('')}<td class="r num">${p.dry || '<span class="muted">0</span>'}</td><td class="r num"><strong>${fmt(p.v)}</strong></td>${hasEhb ? `<td class="r num">${p.ehb == null ? '<span class="muted">not tracked</span>' : p.ehb.toFixed(1)}</td>` : ''}</tr>`).join('') +
+    `</tbody></table></div><p class="muted" style="font-size:14px">Counts every logged tile. Bonus AP added by admins belongs to the team, not to a player.</p></section>`;
 }
 function viewLog(st) {
   if (!S.loaded) return `<p class="muted">Loading event data…</p>`;
@@ -883,6 +1052,7 @@ function viewRules() {
       <li>Floors 6, 11, 16, 21 and 26 have no AP number on the board, so they open as soon as the boss below them dies.</li>
       <li>On the Abyssal Sentinel the damage is taken from the seal table, using the seals intact before that hit.</li>
       <li>A hit that only breaks a boss phase, such as the Warden's armour or the Tyrant's invulnerability, is logged with 0 damage.</li>
+      <li>Final-day fog: for the last 24 hours this page is frozen for everyone but event admins, so the finish is a reveal. Drops are still logged behind it.</li>
       <li>EHB gained is shown for interest and as a sanity check. It does not affect AP or floors.</li>
       <li>If this page and an event admin disagree, the admin is right.</li>
     </ul>
@@ -896,7 +1066,9 @@ function viewAdmin() {
     <label>Admin password<input id="adm-pass" type="password" data-draft="admPass" value="${dval('admPass')}" autocomplete="current-password"></label>
     <div class="row"><button class="btn primary" data-act="login" ${S.busy ? 'disabled' : ''}>Sign in</button></div>
     <p class="muted" style="font-size:15px">Your name is recorded next to every change you make.</p></section>`;
-  const a = S.audit;
+  const a = S.audit, fg = S.fog;
+  const fogNow = fg.active ? `Fog is on now. Viewers see the event as it stood at ${when(fg.at)}.` : fg.mode === 'off' ? 'Fog is off. Everyone sees live standings to the end.'
+    : Date.now() >= EVENT.end ? 'The event is over, so the fog has lifted.' : `Fog comes down at ${when(fg.at)} your time and lifts when the event ends.`;
   return `<div class="row" style="justify-content:space-between"><p>Signed in as <strong>${esc(S.admin)}</strong>. Log drops from the Teams tab.</p><button class="btn" data-act="logout">Sign out</button></div>
   <section class="card guide"><div class="row" style="justify-content:space-between"><h2>Admin guide</h2><button class="btn small" data-act="guide" aria-expanded="${!S.guideHidden}">${S.guideHidden ? 'Show guide' : 'Hide guide'}</button></div>
     ${S.guideHidden ? '' : `<ol>
@@ -906,12 +1078,17 @@ function viewAdmin() {
       <li><strong>Dry protection.</strong> Tap the tile and set "Completed by" to the dry protection option. It scores like a drop and the KC is written in the note. Reset the team's banked KC in Discord as usual.</li>
       <li><strong>After a boss dies.</strong> Pick the team's buff under "Buffs chosen" on their page before logging anything else, so later tiles are scored with it.</li>
       <li><strong>Fix a mistake.</strong> Press Undo on the popup straight after logging, or Delete the entry in the drop log later. Bonus AP on the team page takes a negative number for corrections.</li>
+      <li><strong>Possible duplicate.</strong> An orange warning on the log form means the same screenshot, player and tile, or another admin's entry is already there. Read it, then press Log anyway if it is a real second drop. If another admin logs for the team while your form is open, nothing is saved and the page refreshes.</li>
+      <li><strong>Final-day fog.</strong> It is set up further down this page. Under fog, only signed-in admins see live standings, so do not paste them anywhere.</li>
       <li><strong>Share and check.</strong> The Drop log tab filters entries and copies the standings for Discord. Everyone with the page open sees a popup when a team climbs. Every change you make is listed in the audit log below, with your name.</li>
     </ol>`}</section>
   <section class="card"><h3>EHB tracking</h3><div class="prose"><p>Create a team competition on wiseoldman.net that covers the event dates and add every player. Then paste the number from its URL here. Any metric works; this page asks Wise Old Man for EHB.</p></div>
     <div class="row"><label>Wise Old Man competition ID<input id="wom-id" inputmode="numeric" data-draft="womId" value="${dval('womId', S.settings.womId || '')}" placeholder="e.g. 12345"></label>
     <button class="btn" data-act="save-wom" ${S.busy ? 'disabled' : ''}>Save</button></div>
     ${S.ehb && S.settings.womId ? `<p class="muted" style="font-size:15px">${S.ehb.error ? esc(S.ehb.error) : `Linked to “${esc(S.ehb.title)}” with ${S.ehb.players.length} players.`}</p>` : ''}</section>
+  <section class="card"><h3>Final-day fog</h3><div class="prose"><p>While the fog is on, everyone who is not signed in as an admin sees the tower, drop log and leaderboard frozen as they stood when it came down. Admins keep seeing live data so they can log. When it lifts, the real standings appear on every open page.</p></div>
+    <div class="row"><label>Fog<select id="fog-mode" data-act-change="fog" ${S.busy ? 'disabled' : ''}>${[['auto', 'Automatic: the last 24 hours'], ['on', 'On now, until I change this'], ['off', 'Off']].map(([v, l]) => `<option value="${v}" ${fg.mode === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label></div>
+    <p class="muted" style="font-size:15px">${fogNow}</p></section>
   <section class="card"><div class="row" style="justify-content:space-between"><h3>Audit log</h3><button class="btn small" data-act="audit">Refresh</button></div>
     ${!a ? '<p class="muted">Loading…</p>' : !a.length ? '<p class="muted">Nothing recorded yet.</p>' : `<div class="tablewrap"><table><thead><tr><th>When</th><th>Admin</th><th>Action</th><th>Detail</th></tr></thead><tbody>` +
       a.map(r => `<tr><td class="num muted">${when(r.ts)}</td><td>${esc(r.admin)}</td><td>${esc(r.action)}</td><td style="font-size:14px;word-break:break-word">${esc(auditText(r))}</td></tr>`).join('') + '</tbody></table></div>'}</section>`;
@@ -937,10 +1114,12 @@ function render(force) {
   m.className = 'mode' + (S.loaded ? ' live' : '');
   let b = '';
   if (S.stale) b += `<p class="banner">The live data can't be reached right now. What you see may be out of date.</p>`;
+  if (S.fog.active) b += `<p class="banner">${S.admin ? `<strong>Final-day fog is on.</strong> Viewers see the event frozen as it stood at ${when(S.fog.at)}. You see live data because you are signed in, so keep standings to yourself.`
+    : `<strong>Final-day fog.</strong> The tower, drop log and leaderboard are frozen as they stood at ${when(S.fog.at)}. Everything is revealed at the end.`}</p>`;
   if (S.error) b += `<p class="banner err" role="alert">${esc(S.error)}</p>`;
   document.getElementById('banners').innerHTML = b;
   const st = standings();
-  document.getElementById('app').innerHTML = {tower: viewTower, teams: viewTeams, log: viewLog, tiles: viewTiles, rules: viewRules, admin: viewAdmin}[S.view](st);
+  document.getElementById('app').innerHTML = {tower: viewTower, teams: viewTeams, players: viewPlayers, log: viewLog, tiles: viewTiles, rules: viewRules, admin: viewAdmin}[S.view](st);
   afterRender(before);
 }
 
@@ -1046,8 +1225,9 @@ const actions = {
     const before = new Set(S.subs.map(s => s.id)), tileName = f.tiles[tier][idx];
     // Dry protection: the tile counts the same, and the KC used is written into the note so the log shows how it was earned.
     const via = dryFor(tileName, t).includes(S.draft.via) ? S.draft.via : '', typed = (S.draft.note || '').trim();
-    const ok = await Store.addSub({team: t.id, kind: 'tile', floor: st.floor, tier, tile: +idx, tileName,
-      player: (S.draft.player || '').trim(), note: via ? ['Dry protection: ' + via, typed].filter(Boolean).join(' · ') : typed, via: via ? 'dry' : '', proof, value});
+    const sub = {team: t.id, kind: 'tile', floor: st.floor, tier, tile: +idx, tileName,
+      player: (S.draft.player || '').trim(), note: via ? ['Dry protection: ' + via, typed].filter(Boolean).join(' · ') : typed, via: via ? 'dry' : '', proof, value};
+    const ok = await Store.addSub({...sub, seen: seenOf(t)});
     if (ok) {
       S.tileSel = null; delete S.draft.value; delete S.draft.note; delete S.draft.proof; delete S.draft.via; render(true);
       announce(t, st, `Logged ${tileName} for ${t.name} (${f.boss ? '−' + fmt(value) + ' HP' : '+' + fmt(value) + ' AP'}).`, S.subs.find(s => !before.has(s.id)));
@@ -1057,7 +1237,8 @@ const actions = {
     const t = curTeam(), value = Number(S.draft.adjValue);
     if (!S.draft.adjValue || !Number.isFinite(value)) { S.error = 'Enter the bonus AP as a number.'; return render(true); }
     const st = compute(t, S.subs), before = new Set(S.subs.map(s => s.id));
-    if (await Store.addSub({team: t.id, kind: 'adj', floor: 0, tier: '', tile: -1, tileName: '', player: '', note: (S.draft.adjNote || '').trim(), value})) {
+    const sub = {team: t.id, kind: 'adj', floor: 0, tier: '', tile: -1, tileName: '', player: '', note: (S.draft.adjNote || '').trim(), value};
+    if (await Store.addSub({...sub, seen: seenOf(t)})) {
       delete S.draft.adjValue; delete S.draft.adjNote; render(true);
       announce(t, st, `Added ${value >= 0 ? '+' : ''}${fmt(value)} bonus AP for ${t.name}.`, S.subs.find(s => !before.has(s.id)));
     }
@@ -1125,11 +1306,12 @@ document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if (!el || el.disabled) return;
   const fn = actions[el.dataset.act]; if (fn) fn(el);
 });
-document.addEventListener('input', e => { const k = e.target.dataset && e.target.dataset.draft; if (k) S.draft[k] = e.target.value; });
+document.addEventListener('input', e => { const k = e.target.dataset && e.target.dataset.draft; if (k) S.draft[k] = e.target.value; if (/^sub-/.test(e.target.id)) refreshDup(); });
 document.addEventListener('change', async e => {
   const el = e.target, act = el.dataset && el.dataset.actChange;
   if (el.dataset && el.dataset.rerender) return render(true);
   if (!act) return;
+  if (act === 'fog') return void await write({op: 'setSettings', fog: el.value});
   const t = curTeam();
   if (act === 'buff') await Store.patchTeam(t.id, {buffs: {...(t.buffs || {}), [el.dataset.n]: el.value === '' ? null : +el.value}});
   if (act === 'color') await Store.patchTeam(t.id, {color: +el.value});

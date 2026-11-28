@@ -1,11 +1,13 @@
 import {handler, send, body, fail} from '../lib/http.js';
 import {adminOf} from '../lib/auth.js';
 import {db, init, getState, audit, uid} from '../lib/db.js';
+import {view} from '../lib/event.js';
 
 const str = (v, max = 80) => String(v ?? '').trim().slice(0, max);
 // Screenshot links: only http(s), so a stored link can never run script when clicked.
 const link = v => { const u = str(v, 500); return /^https?:\/\/\S+$/i.test(u) ? u : ''; };
 const getTeam = async id => (await db().query('select data from teams where id = $1', [String(id)])).rows[0]?.data;
+const putSetting = (key, value) => db().query(`insert into settings (key, value) values ($1, $2) on conflict (key) do update set value = excluded.value`, [key, JSON.stringify(value)]);
 
 const ops = {
   async addTeam(b) {
@@ -23,7 +25,12 @@ const ops = {
     if ('name' in p) next.name = str(p.name, 40) || cur.name;
     if ('color' in p) next.color = Number(p.color) || 0;
     if ('members' in p) next.members = [...new Set((Array.isArray(p.members) ? p.members : []).map(m => str(m, 12)).filter(Boolean))].slice(0, 100);
-    if ('buffs' in p) next.buffs = Object.fromEntries(Object.entries(p.buffs || {}).filter(([k]) => ['5', '10', '15', '20', '25'].includes(k)).map(([k, v]) => [k, v == null ? null : Number(v)]));
+    if ('buffs' in p) {
+      next.buffs = Object.fromEntries(Object.entries(p.buffs || {}).filter(([k]) => ['5', '10', '15', '20', '25'].includes(k)).map(([k, v]) => [k, v == null ? null : Number(v)]));
+      // When each buff was last changed, so the final-day fog can hide the ones picked after it came down.
+      next.buffTs = {...cur.buffTs};
+      for (const k of ['5', '10', '15', '20', '25']) if ((next.buffs[k] ?? null) !== ((cur.buffs || {})[k] ?? null)) next.buffTs[k] = Date.now();
+    }
     await db().query('update teams set data = $2 where id = $1', [String(b.id), next]);
     return {id: b.id, team: cur.name, patch: p};
   },
@@ -40,6 +47,11 @@ const ops = {
     const value = Number(s.value), floor = Number(s.floor);
     if (!Number.isFinite(value) || Math.abs(value) > 100000) throw fail(400, 'Enter a sensible number for the value.');
     if (!Number.isInteger(floor) || floor < 0 || floor > 30) throw fail(400, 'Bad floor.');
+    // Two admins, one submission: if this team's log changed after the sender's page last refreshed, stop and let them look.
+    if (s.seen != null) {
+      const newer = (await db().query(`select data from subs where data->>'team' = $1 and (data->>'ts')::bigint > $2 order by (data->>'ts')::bigint desc limit 1`, [String(s.team), Math.trunc(Number(s.seen)) || 0])).rows[0]?.data;
+      if (newer) throw fail(409, `${newer.by || 'Another admin'} logged ${newer.kind === 'adj' ? 'bonus AP' : newer.tileName} for ${team.name} after your page last refreshed. Nothing was saved. The page is now up to date: check it, then log again if it is still needed.`);
+    }
     const data = {team: String(s.team), kind: s.kind === 'adj' ? 'adj' : 'tile', floor, tier: str(s.tier, 10), tile: Number(s.tile) || 0,
       tileName: str(s.tileName, 160), player: str(s.player, 12), note: str(s.note, 200), proof: link(s.proof), value, ts: Date.now(), by: admin, ...(s.via === 'dry' ? {via: 'dry'} : {})};
     const id = uid();
@@ -59,9 +71,10 @@ const ops = {
     return {id: b.id, teamName: (await getTeam(cur.team))?.name, tileName: cur.tileName, proof};
   },
   async setSettings(b) {
-    const womId = str(b.womId, 12).replace(/\D/g, '');
-    await db().query(`insert into settings (key, value) values ('womId', $1) on conflict (key) do update set value = excluded.value`, [JSON.stringify(womId)]);
-    return {womId};
+    const out = {};
+    if ('womId' in b) await putSetting('womId', out.womId = str(b.womId, 12).replace(/\D/g, ''));
+    if ('fog' in b) { out.fog = ['on', 'off'].includes(b.fog) ? b.fog : 'auto'; await putSetting('fog', {mode: out.fog, at: Date.now()}); }
+    return out;
   },
 };
 
@@ -73,5 +86,5 @@ export default handler('POST', async (req, res) => {
   await init();
   const detail = await op(b, admin);
   await audit(admin, b.op, detail);
-  send(res, 200, {...await getState(), admin, configured: true});
+  send(res, 200, {...view(await getState(), admin), admin, configured: true});
 });
